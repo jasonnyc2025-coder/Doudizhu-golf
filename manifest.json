@@ -2,7 +2,7 @@
   "name": "老鹰队",
   "short_name": "老鹰队",
   "description": "老鹰队高尔夫斗地主记分",
-  "start_url": "./landlord-golf.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#1a0a00",
   "theme_color": "#8b0000",

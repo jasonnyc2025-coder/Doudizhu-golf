@@ -1,6 +1,6 @@
 const CACHE = 'ddz-golf-v2';
 const ASSETS = [
-  './landlord-golf.html',
+  './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
