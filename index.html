@@ -366,6 +366,18 @@
   .change-hole-btn:hover, .change-hole-btn:active {
     background: rgba(201,168,76,0.32);
   }
+  .skip-hole-btn {
+    background: rgba(192,57,43,0.12);
+    border-color: #c0392b;
+    color: #8b0000;
+  }
+  .skip-hole-btn:hover, .skip-hole-btn:active {
+    background: rgba(192,57,43,0.25);
+  }
+  .skip-hole-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
   .hole-picker {
     background: #fff8e7;
     border: 1.5px solid #c9a84c;
@@ -862,6 +874,7 @@
           <div class="hole-panel-header-left">
             <div class="hole-title" id="holePanelTitle">第1洞</div>
             <button class="change-hole-btn" id="changeHoleBtn" onclick="toggleHolePicker()" style="display:none;">🔀 改</button>
+            <button class="change-hole-btn skip-hole-btn" id="skipHoleBtn" onclick="skipCurrentHole()" style="display:none;">⏭ 跳过</button>
           </div>
           <div class="landlord-badge" id="landlordBadge">👑 地主: —</div>
         </div>
@@ -1193,12 +1206,15 @@ function renderHolePanel() {
   }
   document.getElementById('landlordBadge').innerHTML = `👑 地主: <b>${state.players[land]}</b>`;
 
-  // 关闭可能打开的下一洞选择器，并按场景显示/隐藏「🔀 改」按钮
+  // 关闭可能打开的下一洞选择器，并按场景显示/隐藏「🔀 改」「⏭ 跳过」按钮
   document.getElementById('holePicker').style.display = 'none';
   const changeBtn = document.getElementById('changeHoleBtn');
+  const skipBtn = document.getElementById('skipHoleBtn');
   // 仅在正常游戏中、且还有其他未打洞可换时显示
   const unplayedCount = state.players.length ? (TOTAL_HOLES - state.step) : 0;
-  changeBtn.style.display = (!editing && state.step < TOTAL_HOLES && unplayedCount > 1) ? 'inline-block' : 'none';
+  const canChange = !editing && state.step < TOTAL_HOLES && unplayedCount > 1;
+  changeBtn.style.display = canChange ? 'inline-block' : 'none';
+  skipBtn.style.display = canChange ? 'inline-block' : 'none';
 
   const wbtns = document.getElementById('winnerBtns');
   wbtns.innerHTML = '';
@@ -1318,6 +1334,24 @@ function pickNextHole(h) {
   updateCurrentHoleHighlight();
   scrollToCurrentHole();
   showToast('已切换到第 ' + (h+1) + ' 洞');
+}
+
+// 跳过当前洞：把它推到 playOrder 末尾，最后再回来打
+function skipCurrentHole() {
+  if (state.editingHole !== null) return;
+  if (state.step >= TOTAL_HOLES) return;
+  const unplayedCount = TOTAL_HOLES - state.step;
+  if (unplayedCount <= 1) return; // 只剩这一个洞，没法跳
+  const cur = state.currentHole;
+  const idx = state.playOrder.indexOf(cur);
+  if (idx !== state.step) return; // 防御
+  state.playOrder.splice(idx, 1);
+  state.playOrder.push(cur);
+  state.currentHole = state.playOrder[state.step];
+  renderHolePanel();
+  updateCurrentHoleHighlight();
+  scrollToCurrentHole();
+  showToast('已跳过第 ' + (cur+1) + ' 洞，最后再打');
 }
 
 function confirmHole() {
