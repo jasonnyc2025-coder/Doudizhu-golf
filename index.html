@@ -340,12 +340,69 @@
     align-items: center;
     margin-bottom: 14px;
   }
+  .hole-panel-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
   .hole-title {
     font-family: 'Ma Shan Zheng', cursive;
     font-size: 20px;
     color: var(--red);
     letter-spacing: 2px;
   }
+  .change-hole-btn {
+    background: rgba(201,168,76,0.15);
+    border: 1px solid #c9a84c;
+    color: #6b3a1f;
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Noto Sans SC', sans-serif;
+    transition: background 0.15s;
+  }
+  .change-hole-btn:hover, .change-hole-btn:active {
+    background: rgba(201,168,76,0.32);
+  }
+  .hole-picker {
+    background: #fff8e7;
+    border: 1.5px solid #c9a84c;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+  }
+  .hole-picker-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #6b3a1f;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+  }
+  .hole-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+  }
+  .hole-pick-btn {
+    padding: 9px 0;
+    border-radius: 6px;
+    border: 1.5px solid #c9a84c;
+    background: white;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    color: #6b3a1f;
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+  .hole-pick-btn.current {
+    background: linear-gradient(135deg, #d4a017, #b8860b);
+    color: white;
+    border-color: #b8860b;
+  }
+  .hole-pick-btn:hover { background: #fff3cc; }
+  .hole-pick-btn.current:hover { background: linear-gradient(135deg, #e5b420, #c9971c); }
   .landlord-badge {
     background: linear-gradient(135deg, #ffd700, #d4a017);
     color: #8b0000;
@@ -802,8 +859,15 @@
 
       <div class="hole-panel" id="holePanel">
         <div class="hole-panel-header">
-          <div class="hole-title" id="holePanelTitle">第1洞</div>
+          <div class="hole-panel-header-left">
+            <div class="hole-title" id="holePanelTitle">第1洞</div>
+            <button class="change-hole-btn" id="changeHoleBtn" onclick="toggleHolePicker()" style="display:none;">🔀 改</button>
+          </div>
           <div class="landlord-badge" id="landlordBadge">👑 地主: —</div>
+        </div>
+        <div class="hole-picker" id="holePicker" style="display:none;">
+          <div class="hole-picker-label">选下一洞（未打的）</div>
+          <div class="hole-picker-grid" id="holePickerGrid"></div>
         </div>
         <div class="winner-select-label">🏆 谁赢了这一洞？</div>
         <div class="winner-btns" id="winnerBtns"></div>
@@ -1129,6 +1193,13 @@ function renderHolePanel() {
   }
   document.getElementById('landlordBadge').innerHTML = `👑 地主: <b>${state.players[land]}</b>`;
 
+  // 关闭可能打开的下一洞选择器，并按场景显示/隐藏「🔀 改」按钮
+  document.getElementById('holePicker').style.display = 'none';
+  const changeBtn = document.getElementById('changeHoleBtn');
+  // 仅在正常游戏中、且还有其他未打洞可换时显示
+  const unplayedCount = state.players.length ? (TOTAL_HOLES - state.step) : 0;
+  changeBtn.style.display = (!editing && state.step < TOTAL_HOLES && unplayedCount > 1) ? 'inline-block' : 'none';
+
   const wbtns = document.getElementById('winnerBtns');
   wbtns.innerHTML = '';
   state.selectedWinner = null;
@@ -1208,6 +1279,45 @@ function renderMultBtns(preselectMult) {
     if (preselectMult === opt.mult) b.classList.add(opt.cls);
     mbtns.appendChild(b);
   });
+}
+
+// ── HOLE PICKER (换下一洞) ─────────────────────────────────────────────
+function toggleHolePicker() {
+  const picker = document.getElementById('holePicker');
+  if (picker.style.display !== 'none') {
+    picker.style.display = 'none';
+    return;
+  }
+  const grid = document.getElementById('holePickerGrid');
+  grid.innerHTML = '';
+  // 列出所有还没打过的洞，按洞号 1..18 排序
+  for (let h = 0; h < TOTAL_HOLES; h++) {
+    if (state.results[h]) continue; // 已打过
+    const b = document.createElement('button');
+    b.className = 'hole-pick-btn' + (h === state.currentHole ? ' current' : '');
+    b.textContent = (h + 1);
+    b.onclick = () => pickNextHole(h);
+    grid.appendChild(b);
+  }
+  picker.style.display = 'block';
+}
+
+function pickNextHole(h) {
+  // 点了当前洞 = 关闭选择器
+  if (h === state.currentHole) {
+    document.getElementById('holePicker').style.display = 'none';
+    return;
+  }
+  // 把 h 从 playOrder 现在位置移到 state.step (下一个要打的位置)
+  const oldIdx = state.playOrder.indexOf(h);
+  if (oldIdx < state.step) return; // 已打过的洞不允许选
+  state.playOrder.splice(oldIdx, 1);
+  state.playOrder.splice(state.step, 0, h);
+  state.currentHole = h;
+  renderHolePanel();          // 会自动隐藏 picker
+  updateCurrentHoleHighlight();
+  scrollToCurrentHole();
+  showToast('已切换到第 ' + (h+1) + ' 洞');
 }
 
 function confirmHole() {
