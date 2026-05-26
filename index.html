@@ -817,6 +817,7 @@
       <div class="setup-section">
         <div class="setup-label">👥 玩家人数</div>
         <div class="player-count-btns">
+          <button class="player-count-btn" onclick="setPlayerCount(2)">2人</button>
           <button class="player-count-btn" onclick="setPlayerCount(3)">3人</button>
           <button class="player-count-btn active" onclick="setPlayerCount(4)">4人</button>
         </div>
@@ -1016,7 +1017,7 @@ function formatDateTime(d) {
 function setPlayerCount(n) {
   state.playerCount = n;
   document.querySelectorAll('.player-count-btn').forEach((b,i) => {
-    b.classList.toggle('active', (i === 0 && n === 3) || (i === 1 && n === 4));
+    b.classList.toggle('active', (i === 0 && n === 2) || (i === 1 && n === 3) || (i === 2 && n === 4));
   });
   renderPlayerInputs();
 }
