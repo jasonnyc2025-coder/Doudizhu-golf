@@ -1936,7 +1936,15 @@ async function renderHistory() {
 async function deleteHistory(idx) {
   const hist = await getHistory();
   const record = hist[idx];
-  if (record && record._id) {
+  if (!record) return;
+
+  // 恢复公积金到该局之前的金额
+  const restoredFund = record.prevFund;
+  await saveFund(restoredFund);
+  document.getElementById('prevFundInput').value = restoredFund;
+  updateFundBanner();
+
+  if (record._id) {
     try {
       const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
       await deleteDoc(doc(db, 'history', record._id));
@@ -1948,6 +1956,7 @@ async function deleteHistory(idx) {
     hist.splice(idx, 1);
     localStorage.setItem('ddz_history', JSON.stringify(hist));
   }
+  showToast('已删除，公积金已恢复至 ฿' + restoredFund.toLocaleString());
   renderHistory();
 }
 
