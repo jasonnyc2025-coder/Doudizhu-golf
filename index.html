@@ -894,7 +894,7 @@
           <div class="setup-label" style="margin-bottom:10px;">🏦 公积金结余</div>
           <div class="fund-row">
             <label>上次结余 (฿)</label>
-            <input type="number" class="fund-input" id="prevFundInput" placeholder="0" min="0" value="0" oninput="localStorage.setItem('ddz_fund', this.value||0); updateFundBanner();">
+            <input type="number" class="fund-input" id="prevFundInput" placeholder="0" min="0" value="0" oninput="saveFund(this.value||0); updateFundBanner();">
           </div>
           <div class="fund-note">1分 = ฿100 · 费用在游戏结束后输入</div>
         </div>
@@ -1092,11 +1092,9 @@ async function doSetPassword() {
   }
 }
 
-function showMainApp() {
-  const savedFund = localStorage.getItem('ddz_fund');
-  if (savedFund !== null) {
-    document.getElementById('prevFundInput').value = savedFund;
-  }
+async function showMainApp() {
+  const fund = await loadFund();
+  document.getElementById('prevFundInput').value = fund;
   updateFundBanner();
   renderPlayerInputs();
   populateStartHole();
@@ -1123,6 +1121,32 @@ function updateFundBanner() {
   const f = parseFloat(localStorage.getItem('ddz_fund')) || 0;
   const el = document.getElementById('fundBannerValue');
   if (el) el.textContent = '฿' + f.toLocaleString();
+}
+
+async function saveFund(value) {
+  const v = parseFloat(value) || 0;
+  localStorage.setItem('ddz_fund', v.toString());
+  try {
+    if (window.db) {
+      const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+      await updateDoc(doc(db, 'config', 'settings'), { fund: v });
+    }
+  } catch(e) {}
+}
+
+async function loadFund() {
+  try {
+    if (window.db) {
+      const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+      const snap = await getDoc(doc(db, 'config', 'settings'));
+      if (snap.exists() && snap.data().fund !== undefined) {
+        const f = snap.data().fund;
+        localStorage.setItem('ddz_fund', f.toString());
+        return f;
+      }
+    }
+  } catch(e) {}
+  return parseFloat(localStorage.getItem('ddz_fund')) || 0;
 }
 
 function formatDate(d) {
@@ -1760,8 +1784,7 @@ function recalcFund() {
   const contribution = totalLost * 100;
   const newFund = state.prevFund + contribution - cost;
 
-  // save new fund to localStorage
-  localStorage.setItem('ddz_fund', newFund.toString());
+  saveFund(newFund);
   updateFundBanner();
 
   document.getElementById('resultFundBox').innerHTML = `
@@ -1776,8 +1799,8 @@ function recalcFund() {
   `;
 }
 
-function newGame() {
-  const newFund = parseFloat(localStorage.getItem('ddz_fund')) || 0;
+async function newGame() {
+  const newFund = await loadFund();
 
   updateFundBanner();
   document.getElementById('resultScreen').style.display = 'none';
@@ -1807,10 +1830,10 @@ function doCancelGame() {
   document.getElementById('resultScreen').style.display = 'none';
   document.getElementById('setupScreen').style.display = 'block';
   document.getElementById('fundResult').style.display = 'none';
-  // 上次结余保持不变
-  const fund = parseFloat(localStorage.getItem('ddz_fund')) || 0;
-  document.getElementById('prevFundInput').value = fund;
-  updateFundBanner();
+  loadFund().then(fund => {
+    document.getElementById('prevFundInput').value = fund;
+    updateFundBanner();
+  });
 }
 
 function showCancelConfirm() {
