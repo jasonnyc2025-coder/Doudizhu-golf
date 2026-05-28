@@ -1597,11 +1597,12 @@ function showFundPreview() {
 }
 
 // ── RESULT ─────────────────────────────────────────────────────────────
-function showResult() {
+async function showResult() {
   document.getElementById('gameScreen').style.display = 'none';
   const result = document.getElementById('resultScreen');
   result.style.display = 'block';
   renderCostListResult();
+  await saveHistory();
 
   const totals = getTotals();
   const baseScore = Math.max(...totals);  // 输得最少的人（分数最高）作为基准
@@ -1656,8 +1657,7 @@ function recalcFund() {
   `;
 }
 
-async function newGame() {
-  await saveHistory();
+function newGame() {
   const newFund = parseFloat(localStorage.getItem('ddz_fund')) || 0;
 
   updateFundBanner();
