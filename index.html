@@ -1226,6 +1226,7 @@ function startGame() {
   const clr = document.getElementById('costListResult'); if (clr) clr.innerHTML = '';
 
   buildScoreTable();
+  updateCurrentHoleHighlight();
   renderHolePanel();
   renderTotals();
 }
