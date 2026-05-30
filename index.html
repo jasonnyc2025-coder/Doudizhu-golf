@@ -325,6 +325,9 @@
     font-size: 14px;
   }
   .score-neg { color: #e74c3c; }
+  .score-zero { color: #bbb; }
+  .score-landlord { background: rgba(231,76,60,0.12); }
+  .score-farmer   { background: rgba(39,174,96,0.10); }
   .score-pos { color: #27ae60; }
   .score-zero { color: #999; }
 
@@ -1323,7 +1326,8 @@ function updateTableRow(hole) {
     if (cell && state.scores[hole] !== undefined) {
       const v = state.scores[hole][pi];
       cell.textContent = v === 0 ? '—' : v;
-      cell.className = 'score-cell ' + (v < 0 ? 'score-neg' : 'score-zero');
+      const roleClass = pi === land ? 'score-landlord' : 'score-farmer';
+      cell.className = 'score-cell ' + roleClass + (v < 0 ? ' score-neg' : ' score-zero');
     }
   });
 
