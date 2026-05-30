@@ -1592,9 +1592,15 @@ function refreshAllRows() {
     if (state.results[h]) {
       updateTableRow(h);
     } else {
-      // 清空未打的洞
+      // 清空未打的洞（当前洞保留地主预填名）
       const rl = document.getElementById(`rl_${h}`);
-      if (rl) rl.innerHTML = '—';
+      if (rl) {
+        if (h === state.currentHole && state.step < TOTAL_HOLES) {
+          rl.innerHTML = `<span class="role-landlord" style="opacity:0.5;">${state.players[state.currentLandlord]}</span>`;
+        } else {
+          rl.innerHTML = '—';
+        }
+      }
       state.players.forEach((_,pi) => {
         const cell = document.getElementById(`sc_${h}_${pi}`);
         if (cell) { cell.textContent = '—'; cell.className = ''; }
