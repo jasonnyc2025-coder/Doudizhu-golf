@@ -1276,7 +1276,14 @@ function buildScoreTable() {
 function updateCurrentHoleHighlight() {
   for (let h = 0; h < TOTAL_HOLES; h++) {
     const tr = document.getElementById(`row_${h}`);
-    if (tr) tr.classList.toggle('current-hole', h === state.currentHole && h < TOTAL_HOLES);
+    if (!tr) continue;
+    const isCurrent = h === state.currentHole && state.step < TOTAL_HOLES;
+    tr.classList.toggle('current-hole', isCurrent);
+    // 当前洞尚未记分时，先预填地主名字
+    if (isCurrent && !state.results[h]) {
+      const rl = document.getElementById(`rl_${h}`);
+      if (rl) rl.innerHTML = `<span class="role-landlord" style="opacity:0.5;">${state.players[state.currentLandlord]}</span>`;
+    }
   }
 }
 
@@ -1576,6 +1583,7 @@ function recomputeAll() {
   }
   // 当前应轮到的地主 = 最后已打洞之后的地主
   state.currentLandlord = land;
+  updateCurrentHoleHighlight();
 }
 
 // 刷新整张表格的所有行显示
