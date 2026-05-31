@@ -1044,8 +1044,16 @@ let state = {
 const TOTAL_HOLES = 18;
 
 // ── AUTH ───────────────────────────────────────────────────────────────
+function hideAllScreens() {
+  ['setupScreen','gameScreen','resultScreen','historyScreen','passwordScreen','setPasswordScreen'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+}
+
 async function initApp() {
   document.getElementById('dateDisplay').textContent = formatDate(new Date());
+  hideAllScreens();
   if (sessionStorage.getItem('ddz_auth') === 'ok') {
     showMainApp();
     return;
