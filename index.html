@@ -1198,11 +1198,18 @@ async function searchNearbyCourses() {
     });
     const data = await res.json();
 
-    const courses = data.elements
+    // Prefer English names; fall back to any name only if no English names found at all
+    const enCourses = data.elements
+      .map(e => e.tags && e.tags['name:en'])
+      .filter(Boolean)
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .sort();
+    const allCourses = data.elements
       .map(e => e.tags && (e.tags['name:en'] || e.tags.name || e.tags['name:th']))
       .filter(Boolean)
       .filter((v, i, a) => a.indexOf(v) === i)
       .sort();
+    const courses = enCourses.length > 0 ? enCourses : allCourses;
 
     list.innerHTML = '';
     if (courses.length === 0) {
