@@ -1199,7 +1199,7 @@ async function searchNearbyCourses() {
     const data = await res.json();
 
     const courses = data.elements
-      .map(e => e.tags && (e.tags.name || e.tags['name:en'] || e.tags['name:th']))
+      .map(e => e.tags && (e.tags['name:en'] || e.tags.name || e.tags['name:th']))
       .filter(Boolean)
       .filter((v, i, a) => a.indexOf(v) === i)
       .sort();
