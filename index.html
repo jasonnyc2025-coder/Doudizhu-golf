@@ -2100,6 +2100,8 @@ async function deleteHistory(idx) {
   const record = hist[idx];
   if (!record) return;
 
+  if (!confirm(`确定要删除这条记录吗？\n${record.date}${record.courseName ? '\n' + record.courseName : ''}\n\n公积金将恢复到 ฿${record.prevFund.toLocaleString()}`)) return;
+
   // 恢复公积金到该局之前的金额
   const restoredFund = record.prevFund;
   await saveFund(restoredFund);
