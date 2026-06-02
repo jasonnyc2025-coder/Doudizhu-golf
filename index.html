@@ -761,6 +761,40 @@
     font-size: 26px; color: #8b0000; margin-bottom: 8px; text-align: center;
   }
   .password-sub { font-size: 13px; color: #999; margin-bottom: 32px; text-align: center; }
+
+  /* COURSE SEARCH */
+  .course-search-row {
+    display: flex; gap: 8px; align-items: center;
+  }
+  .course-input {
+    flex: 1; padding: 10px 12px;
+    border: 1.5px solid #c9a84c; border-radius: 6px;
+    font-size: 15px; font-family: 'Noto Sans SC', sans-serif;
+    background: white; color: var(--ink); outline: none;
+  }
+  .course-search-btn {
+    padding: 10px 14px; white-space: nowrap;
+    background: linear-gradient(135deg, #27ae60, #1e8449);
+    color: white; border: none; border-radius: 6px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+  .course-list {
+    margin-top: 8px; border: 1.5px solid #c9a84c;
+    border-radius: 6px; background: white; max-height: 200px;
+    overflow-y: auto; display: none;
+  }
+  .course-item {
+    padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f0e4c0;
+    font-size: 14px; color: var(--ink); font-family: 'Noto Sans SC', sans-serif;
+  }
+  .course-item:last-child { border-bottom: none; }
+  .course-item:hover { background: #fff8e7; }
+  .course-item.selected { background: #fff3cc; font-weight: 700; }
+  .course-selected-name {
+    margin-top: 6px; font-size: 13px; color: #27ae60;
+    font-weight: 600; min-height: 18px;
+  }
   .password-input {
     width: 100%; max-width: 280px; padding: 14px 16px;
     border: 2px solid #c9a84c; border-radius: 10px;
@@ -910,6 +944,16 @@
       </div>
 
       <div class="setup-section">
+        <div class="setup-label">🏌️ 球场名称</div>
+        <div class="course-search-row">
+          <input type="text" id="courseInput" class="course-input" placeholder="输入或搜索球场名称">
+          <button class="course-search-btn" onclick="searchNearbyCourses()">📍 附近</button>
+        </div>
+        <div class="course-list" id="courseList"></div>
+        <div class="course-selected-name" id="courseSelectedName"></div>
+      </div>
+
+      <div class="setup-section">
         <div class="fund-section">
           <div class="setup-label" style="margin-bottom:10px;">🏦 公积金结余</div>
           <div class="fund-row">
@@ -926,7 +970,8 @@
     <!-- GAME SCREEN -->
     <div class="game-screen" id="gameScreen">
 
-      <div style="display:flex;justify-content:flex-end;padding:8px 12px;background:#fdf6e3;border-bottom:1px solid #e8d5a0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#fdf6e3;border-bottom:1px solid #e8d5a0;">
+        <div id="gameCourseNameDisplay" style="font-size:13px;font-weight:600;color:#6b3a1f;letter-spacing:0.5px;"></div>
         <button onclick="cancelGame()" style="background:none;border:1.5px solid #c0392b;color:#c0392b;padding:6px 14px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">✕ 取消游戏</button>
       </div>
 
@@ -980,6 +1025,7 @@
     <!-- RESULT SCREEN -->
     <div class="result-screen" id="resultScreen">
       <div class="result-title">🏆 终局结算</div>
+      <div id="resultCourseNameDisplay" style="text-align:center;font-size:14px;font-weight:600;color:#6b3a1f;letter-spacing:0.5px;margin:-8px 0 14px;"></div>
       <div class="result-grid" id="resultGrid"></div>
       <div class="result-cost-box" style="background:#fff8e7;border:1.5px solid #c9a84c;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
         <div style="font-size:13px;font-weight:700;color:#6b3a1f;margin-bottom:10px;letter-spacing:1px;">💰 本次费用（可多笔累加）</div>
@@ -1132,6 +1178,61 @@ async function showMainApp() {
 // Wait for Firebase to init then start
 window.addEventListener('load', () => setTimeout(initApp, 300));
 
+// ── COURSE SEARCH ──────────────────────────────────────────────────────
+async function searchNearbyCourses() {
+  const btn = document.querySelector('.course-search-btn');
+  const list = document.getElementById('courseList');
+  btn.textContent = '定位中...';
+  btn.disabled = true;
+
+  try {
+    const pos = await new Promise((resolve, reject) =>
+      navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 })
+    );
+    const { latitude: lat, longitude: lon } = pos.coords;
+    btn.textContent = '搜索中...';
+
+    const query = `[out:json][timeout:25];(way["leisure"="golf_course"](around:30000,${lat},${lon});relation["leisure"="golf_course"](around:30000,${lat},${lon}););out tags;`;
+    const res = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST', body: query
+    });
+    const data = await res.json();
+
+    const courses = data.elements
+      .map(e => e.tags && (e.tags.name || e.tags['name:en'] || e.tags['name:th']))
+      .filter(Boolean)
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .sort();
+
+    list.innerHTML = '';
+    if (courses.length === 0) {
+      list.innerHTML = '<div class="course-item">附近30公里内未找到球场</div>';
+    } else {
+      courses.forEach(name => {
+        const item = document.createElement('div');
+        item.className = 'course-item';
+        item.textContent = name;
+        item.onclick = () => selectCourse(name);
+        list.appendChild(item);
+      });
+    }
+    list.style.display = 'block';
+  } catch(e) {
+    list.innerHTML = `<div class="course-item" style="color:#c0392b;">${e.code === 1 ? '请允许定位权限' : '搜索失败，请手动输入球场名称'}</div>`;
+    list.style.display = 'block';
+  }
+
+  btn.textContent = '📍 附近';
+  btn.disabled = false;
+}
+
+function selectCourse(name) {
+  document.getElementById('courseInput').value = name;
+  document.getElementById('courseSelectedName').textContent = '✓ 已选择：' + name;
+  document.getElementById('courseList').style.display = 'none';
+  document.querySelectorAll('.course-item').forEach(el => el.classList.remove('selected'));
+}
+
 function populateStartHole() {
   const sel = document.getElementById('startHoleSelect');
   if (!sel) return;
@@ -1227,6 +1328,7 @@ function startGame() {
     state.players.push(v || `玩家${i+1}`);
   }
   state.prevFund = parseFloat(document.getElementById('prevFundInput').value) || 0;
+  state.courseName = document.getElementById('courseInput').value.trim();
   state.cost = 0;
   state.costItems = [];
   state.startHole = parseInt(document.getElementById('startHoleSelect').value) || 0;
@@ -1247,6 +1349,9 @@ function startGame() {
   document.getElementById('setupScreen').style.display = 'none';
   document.getElementById('gameScreen').style.display = 'block';
   document.getElementById('resultScreen').style.display = 'none';
+
+  const courseDisplay = document.getElementById('gameCourseNameDisplay');
+  courseDisplay.textContent = state.courseName ? '⛳ ' + state.courseName : '';
 
   // 重置面板显示状态
   document.getElementById('holePanel').style.display = 'block';
@@ -1788,6 +1893,8 @@ async function showResult() {
   document.getElementById('gameScreen').style.display = 'none';
   const result = document.getElementById('resultScreen');
   result.style.display = 'block';
+  const rcd = document.getElementById('resultCourseNameDisplay');
+  rcd.textContent = state.courseName ? '⛳ ' + state.courseName : '';
   renderCostListResult();
   await saveHistory();
 
@@ -1919,7 +2026,8 @@ async function saveHistory() {
     prevFund: state.prevFund,
     contribution: contribution,
     cost: cost,
-    newFund: newFund
+    newFund: newFund,
+    courseName: state.courseName || ''
   };
 
   try {
@@ -1965,7 +2073,10 @@ async function renderHistory() {
     return `
       <div class="history-card">
         <div class="history-card-top">
-          <div class="history-date">📅 ${r.date}</div>
+          <div>
+            <div class="history-date">📅 ${r.date}</div>
+            ${r.courseName ? `<div style="font-size:12px;color:#6b3a1f;font-weight:600;margin-top:2px;">⛳ ${r.courseName}</div>` : ''}
+          </div>
           <button class="history-del" onclick="deleteHistory(${idx})">×</button>
         </div>
         <div class="history-players">${players}</div>
