@@ -741,6 +741,24 @@
   .password-sub { font-size: 13px; color: #999; margin-bottom: 32px; text-align: center; }
 
   /* COURSE SEARCH */
+  .pocket-toggle {
+    padding: 11px 28px;
+    background: white;
+    border: 2px solid #c9a84c;
+    border-radius: 8px;
+    font-size: 17px;
+    font-weight: 700;
+    color: #6b3a1f;
+    cursor: pointer;
+    font-family: 'Noto Sans SC', sans-serif;
+    transition: all 0.2s;
+  }
+  .pocket-toggle.active {
+    background: linear-gradient(135deg, #27ae60, #1e8449);
+    color: #fff;
+    border-color: #1e8449;
+  }
+
   .course-search-row {
     display: flex; gap: 8px; align-items: center;
   }
@@ -924,6 +942,12 @@
       </div>
 
       <div class="setup-section">
+        <div class="setup-label">💰 计分方式</div>
+        <button id="pocketModeBtn" class="pocket-toggle" onclick="togglePocketMode()">入口袋</button>
+        <div class="fund-note" style="margin-top:8px;">开启后：地主赢得一洞 → 地主 <b>+1分</b>，各农民各 <b>−1分</b></div>
+      </div>
+
+      <div class="setup-section">
         <div class="setup-label">🏌️ 球场名称</div>
         <div class="course-search-row">
           <input type="text" id="courseInput" class="course-input" placeholder="输入或搜索球场名称">
@@ -1066,6 +1090,7 @@ let state = {
   cost: 0,
   costItems: [],
   selectedWinner: null,
+  pocketMode: false,
 };
 const TOTAL_HOLES = 18;
 
@@ -1159,6 +1184,10 @@ async function showMainApp() {
 window.addEventListener('load', () => setTimeout(initApp, 300));
 
 // ── COURSE SEARCH ──────────────────────────────────────────────────────
+function togglePocketMode() {
+  document.getElementById('pocketModeBtn').classList.toggle('active');
+}
+
 async function searchNearbyCourses() {
   const btn = document.querySelector('.course-search-btn');
   const list = document.getElementById('courseList');
@@ -1315,6 +1344,7 @@ function startGame() {
   }
   state.prevFund = parseFloat(document.getElementById('prevFundInput').value) || 0;
   state.courseName = document.getElementById('courseInput').value.trim();
+  state.pocketMode = document.getElementById('pocketModeBtn').classList.contains('active');
   state.cost = 0;
   state.costItems = [];
   state.startHole = parseInt(document.getElementById('startHoleSelect').value) || 0;
@@ -1337,7 +1367,10 @@ function startGame() {
   document.getElementById('resultScreen').style.display = 'none';
 
   const courseDisplay = document.getElementById('gameCourseNameDisplay');
-  courseDisplay.textContent = state.courseName ? '⛳ ' + state.courseName : '';
+  let headerParts = [];
+  if (state.courseName) headerParts.push('⛳ ' + state.courseName);
+  if (state.pocketMode) headerParts.push('💰 入口袋');
+  courseDisplay.textContent = headerParts.join('  ');
 
   // 重置面板显示状态
   document.getElementById('holePanel').style.display = 'block';
@@ -1549,10 +1582,11 @@ function renderMultBtns(preselectMult) {
   document.getElementById('confirmBtn').disabled = !preselectMult;
   if (state.selectedWinner) state.selectedWinner.mult = preselectMult || null;
 
+  const isPocketLandlord = state.pocketMode && state.selectedWinner && state.selectedWinner.type === 'landlord';
   const opts = [
-    { mult: 1, label: '普通 <span style="opacity:0.85;">−1</span>', cls: 'normal-selected' },
-    { mult: 2, label: '🐦 小鸟 <span style="opacity:0.85;">−2</span>', cls: 'birdie-selected' },
-    { mult: 3, label: '🦅 老鹰 <span style="opacity:0.85;">−3</span>', cls: 'eagle-selected' },
+    { mult: 1, label: isPocketLandlord ? '普通 <span style="opacity:0.85;">地主+1 / 农民−1</span>' : '普通 <span style="opacity:0.85;">−1</span>', cls: 'normal-selected' },
+    { mult: 2, label: isPocketLandlord ? '🐦 小鸟 <span style="opacity:0.85;">地主+2 / 农民−2</span>' : '🐦 小鸟 <span style="opacity:0.85;">−2</span>', cls: 'birdie-selected' },
+    { mult: 3, label: isPocketLandlord ? '🦅 老鹰 <span style="opacity:0.85;">地主+3 / 农民−3</span>' : '🦅 老鹰 <span style="opacity:0.85;">−3</span>', cls: 'eagle-selected' },
   ];
   opts.forEach(opt => {
     const b = document.createElement('button');
@@ -1693,6 +1727,7 @@ function recomputeAll() {
     const delta = new Array(n).fill(0);
     if (type === 'landlord') {
       state.players.forEach((_,i) => { if (i !== land) delta[i] = -mult; });
+      if (state.pocketMode) delta[land] = mult;
     } else if (type === 'farmer') {
       delta[land] = -mult;
     }
