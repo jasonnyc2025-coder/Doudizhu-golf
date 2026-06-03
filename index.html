@@ -1201,28 +1201,22 @@ async function searchNearbyCourses() {
     const { latitude: lat, longitude: lon } = pos.coords;
     btn.textContent = '搜索中...';
 
-    const query = `[out:json][timeout:25];(way["leisure"="golf_course"](around:30000,${lat},${lon});relation["leisure"="golf_course"](around:30000,${lat},${lon}););out tags;`;
+    const query = `[out:json][timeout:25];(way["leisure"="golf_course"](around:50000,${lat},${lon});relation["leisure"="golf_course"](around:50000,${lat},${lon}););out tags;`;
     const res = await fetch('https://overpass-api.de/api/interpreter', {
       method: 'POST', body: query
     });
     const data = await res.json();
 
-    // Prefer English names; fall back to any name only if no English names found at all
-    const enCourses = data.elements
-      .map(e => e.tags && e.tags['name:en'])
-      .filter(Boolean)
-      .filter((v, i, a) => a.indexOf(v) === i)
-      .sort();
-    const allCourses = data.elements
+    // Show all courses; prefer name:en, fall back to name or name:th
+    const courses = data.elements
       .map(e => e.tags && (e.tags['name:en'] || e.tags.name || e.tags['name:th']))
       .filter(Boolean)
       .filter((v, i, a) => a.indexOf(v) === i)
       .sort();
-    const courses = enCourses.length > 0 ? enCourses : allCourses;
 
     list.innerHTML = '';
     if (courses.length === 0) {
-      list.innerHTML = '<div class="course-item">附近30公里内未找到球场</div>';
+      list.innerHTML = '<div class="course-item">附近50公里内未找到球场</div>';
     } else {
       courses.forEach(name => {
         const item = document.createElement('div');
