@@ -142,28 +142,6 @@
     text-transform: uppercase;
   }
 
-  .player-count-btns {
-    display: flex; gap: 10px;
-  }
-  .player-count-btn {
-    flex: 1; padding: 12px;
-    background: white;
-    border: 2px solid #d4a017;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 700;
-    color: #6b3a1f;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: 'Noto Sans SC', sans-serif;
-  }
-  .player-count-btn:hover { background: #fff8e7; }
-  .player-count-btn.active {
-    background: linear-gradient(135deg, #c0392b, #8b0000);
-    color: #ffd700;
-    border-color: #8b0000;
-  }
-
   .player-inputs { display: flex; flex-direction: column; gap: 8px; }
   .player-input-row { display: flex; gap: 8px; align-items: center; }
   .player-input-row label {
@@ -917,11 +895,13 @@
 
       <div class="setup-section">
         <div class="setup-label">👥 玩家人数</div>
-        <div class="player-count-btns">
-          <button class="player-count-btn" onclick="setPlayerCount(2)">2人</button>
-          <button class="player-count-btn" onclick="setPlayerCount(3)">3人</button>
-          <button class="player-count-btn active" onclick="setPlayerCount(4)">4人</button>
-        </div>
+        <select id="playerCountSelect" onchange="setPlayerCount(parseInt(this.value))"
+          style="width:100%;padding:10px 14px;font-size:16px;font-family:'Noto Sans SC',sans-serif;border:1.5px solid var(--border);border-radius:8px;background:#fffdf5;color:var(--ink);outline:none;cursor:pointer;">
+          <option value="2">2 人</option>
+          <option value="3">3 人</option>
+          <option value="4" selected>4 人</option>
+          <option value="5">5 人</option>
+        </select>
       </div>
 
       <div class="setup-section">
@@ -1295,14 +1275,13 @@ function formatDateTime(d) {
 
 function setPlayerCount(n) {
   state.playerCount = n;
-  document.querySelectorAll('.player-count-btn').forEach((b,i) => {
-    b.classList.toggle('active', (i === 0 && n === 2) || (i === 1 && n === 3) || (i === 2 && n === 4));
-  });
+  const sel = document.getElementById('playerCountSelect');
+  if (sel) sel.value = n;
   renderPlayerInputs();
 }
 
 function renderPlayerInputs() {
-  const defaults = ['Andy', 'Jason', 'Ray', 'Sun'];
+  const defaults = ['Andy', 'Jason', 'Ray', 'Sun', '玩家5'];
   const container = document.getElementById('playerInputs');
   const flContainer = document.getElementById('firstLandlordSelect');
   container.innerHTML = '';
