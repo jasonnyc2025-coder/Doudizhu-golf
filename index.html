@@ -1479,7 +1479,7 @@ function updateTableRow(hole) {
     const fc = document.getElementById(`ft_${pi}`);
     if (fc) {
       fc.textContent = totals[pi];
-      fc.style.color = totals[pi] < 0 ? '#ff8a8a' : totals[pi] > 0 ? '#27ae60' : '#aaa';
+      fc.style.color = totals[pi] === 0 ? '#aaa' : '#ff8a8a';
     }
   });
   const ftTotal = document.getElementById('ft_total');
