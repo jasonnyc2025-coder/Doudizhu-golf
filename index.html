@@ -1201,22 +1201,38 @@ async function searchNearbyCourses() {
     const { latitude: lat, longitude: lon } = pos.coords;
     btn.textContent = '搜索中...';
 
-    const query = `[out:json][timeout:25];(way["leisure"="golf_course"](around:50000,${lat},${lon});relation["leisure"="golf_course"](around:50000,${lat},${lon}););out tags;`;
-    const res = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST', body: query
-    });
-    const data = await res.json();
+    // Overpass: nwr covers node+way+relation; include leisure=golf_course AND sport=golf
+    const overpassQuery = `[out:json][timeout:30];(nwr["leisure"="golf_course"](around:50000,${lat},${lon});nwr["sport"="golf"]["name"](around:50000,${lat},${lon}););out tags;`;
+    // Nominatim: bounding box ~50km, English-first, filter to golf results
+    const d = 0.45;
+    const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=golf&format=json&limit=50&viewbox=${lon-d},${lat+d},${lon+d},${lat-d}&bounded=1&namedetails=1&accept-language=en`;
 
-    // Show all courses; prefer name:en, fall back to name or name:th
-    const courses = data.elements
-      .map(e => e.tags && (e.tags['name:en'] || e.tags.name || e.tags['name:th']))
-      .filter(Boolean)
-      .filter((v, i, a) => a.indexOf(v) === i)
-      .sort();
+    const [overpassResult, nominatimResult] = await Promise.allSettled([
+      fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: overpassQuery }).then(r => r.json()),
+      fetch(nominatimUrl).then(r => r.json())
+    ]);
+
+    const nameSet = new Set();
+
+    if (overpassResult.status === 'fulfilled') {
+      overpassResult.value.elements.forEach(e => {
+        const name = e.tags && (e.tags['name:en'] || e.tags.name || e.tags['name:th']);
+        if (name) nameSet.add(name);
+      });
+    }
+
+    if (nominatimResult.status === 'fulfilled' && Array.isArray(nominatimResult.value)) {
+      nominatimResult.value.forEach(r => {
+        const name = (r.namedetails && (r.namedetails['name:en'] || r.namedetails['name'])) || r.name;
+        if (name) nameSet.add(name);
+      });
+    }
+
+    const courses = [...nameSet].sort();
 
     list.innerHTML = '';
     if (courses.length === 0) {
-      list.innerHTML = '<div class="course-item">附近50公里内未找到球场</div>';
+      list.innerHTML = '<div class="course-item">附近未找到球场，请手动输入名称</div>';
     } else {
       courses.forEach(name => {
         const item = document.createElement('div');
