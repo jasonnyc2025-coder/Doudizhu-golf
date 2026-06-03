@@ -1546,11 +1546,11 @@ function renderHolePanel() {
   // 该洞当前已选的结果（编辑模式下用于预选高亮）
   const cur = editing ? state.results[h] : null;
 
-  addWinnerBtn(wbtns, `👑 <b>${state.players[land]}</b> (地主赢)`, 'landlord', land, land, cur);
-  state.players.forEach((p,i) => {
-    if (i !== land) {
-      addWinnerBtn(wbtns, `🌾 <b>${p}</b> (农民赢)`, 'farmer', i, land, cur);
-    }
+  // Buttons in fixed player order; landlord gets red styling at their position
+  state.players.forEach((p, i) => {
+    const isLandlord = i === land;
+    const label = isLandlord ? `👑 <b>${p}</b> (地主赢)` : `🌾 <b>${p}</b> (农民赢)`;
+    addWinnerBtn(wbtns, label, isLandlord ? 'landlord' : 'farmer', i, land, cur);
   });
   addWinnerBtn(wbtns, `🤝 平局 (无扣分)`, 'tie', -1, land, cur);
 }
