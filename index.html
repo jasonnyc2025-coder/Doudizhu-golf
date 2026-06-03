@@ -1417,7 +1417,7 @@ function buildScoreTable() {
   let footHtml = `<tr style="background:linear-gradient(180deg,#3a1a00,#5a2800);">
     <td colspan="2" style="padding:8px 6px;text-align:center;font-size:12px;font-weight:700;color:#ffd700;letter-spacing:1px;">合计</td>`;
   state.players.forEach((_,pi) => {
-    footHtml += `<td id="ft_${pi}" style="padding:8px 6px;text-align:center;font-size:15px;font-weight:700;color:#ff8a8a;">0</td>`;
+    footHtml += `<td id="ft_${pi}" style="padding:8px 6px;text-align:center;font-size:15px;font-weight:700;color:#aaa;">0</td>`;
   });
   footHtml += `<td id="ft_total" style="padding:8px 6px;text-align:center;font-size:15px;font-weight:700;color:#ffd700;border-left:2px solid #c9a84c;">0</td></tr>`;
   tfoot.innerHTML = footHtml;
@@ -1479,7 +1479,7 @@ function updateTableRow(hole) {
     const fc = document.getElementById(`ft_${pi}`);
     if (fc) {
       fc.textContent = totals[pi];
-      fc.style.color = totals[pi] < 0 ? '#ff8a8a' : 'rgba(255,255,255,0.4)';
+      fc.style.color = totals[pi] < 0 ? '#ff8a8a' : totals[pi] > 0 ? '#27ae60' : '#aaa';
     }
   });
   const ftTotal = document.getElementById('ft_total');
