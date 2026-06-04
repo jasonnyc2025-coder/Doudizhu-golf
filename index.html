@@ -931,7 +931,7 @@
         <div class="setup-label">👑 第一洞地主</div>
         <div class="first-landlord-select" id="firstLandlordSelect"></div>
       </div>
-      <div style="display:flex;gap:24px;align-items:flex-start;">
+      <div style="display:flex;gap:16px;align-items:flex-start;">
         <div class="setup-section" style="flex:1;min-width:0;">
           <div class="setup-label">⛳ 从第几洞开始</div>
           <div style="display:flex;gap:6px;align-items:center;">
@@ -939,10 +939,10 @@
             <span style="font-size:12px;color:#6b3a1f;white-space:nowrap;">共18洞</span>
           </div>
         </div>
-        <div class="setup-section" style="flex:0 0 auto;">
+        <div class="setup-section" style="flex:1;min-width:0;">
           <div class="setup-label">🏌️ 球场名称</div>
           <input type="hidden" id="courseInput">
-          <button class="course-search-btn" onclick="searchNearbyCourses()">📍 附近搜索</button>
+          <button class="course-search-btn" onclick="searchNearbyCourses()" style="width:100%;">📍 附近搜索</button>
           <div class="course-selected-name" id="courseSelectedName" style="margin-top:4px;"></div>
           <div class="course-list" id="courseList"></div>
         </div>
