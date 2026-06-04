@@ -927,9 +927,14 @@
         <div class="player-inputs" id="playerInputs"></div>
       </div>
 
-      <div class="setup-section">
-        <div class="setup-label">👑 第一洞地主</div>
-        <div class="first-landlord-select" id="firstLandlordSelect"></div>
+      <div class="setup-section" style="display:flex;gap:20px;align-items:flex-start;">
+        <div style="flex:1;min-width:0;">
+          <div class="setup-label">👑 第一洞地主</div>
+          <div class="first-landlord-select" id="firstLandlordSelect"></div>
+        </div>
+        <div id="pocketSide" style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <div class="setup-label" style="margin-bottom:0;white-space:nowrap;">💰 计分方式</div>
+        </div>
       </div>
       <div style="display:flex;gap:16px;align-items:flex-start;">
         <div class="setup-section" style="flex:1;min-width:0;">
@@ -1336,21 +1341,17 @@ function renderPlayerInputs() {
     };
     flContainer.appendChild(btn);
   }
-  // Pocket group: pushed far right, label above button
-  const pocketGroup = document.createElement('div');
-  pocketGroup.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;margin-left:auto;padding-left:20px;';
-  const pocketLabel = document.createElement('span');
-  pocketLabel.style.cssText = 'font-size:13px;font-weight:700;color:#8b6914;font-family:"Noto Sans SC",sans-serif;white-space:nowrap;';
-  pocketLabel.textContent = '💰 计分方式';
+  // Pocket button goes into the separate right column
+  const pocketSide = document.getElementById('pocketSide');
   const pocketBtn = document.createElement('button');
   pocketBtn.id = 'pocketModeBtn';
   pocketBtn.className = 'pocket-toggle' + (state.pocketMode ? ' active' : '');
   pocketBtn.title = '开启后：地主赢 → 地主+1分，各农民−1分';
   pocketBtn.textContent = '入口袋';
   pocketBtn.onclick = togglePocketMode;
-  pocketGroup.appendChild(pocketLabel);
-  pocketGroup.appendChild(pocketBtn);
-  flContainer.appendChild(pocketGroup);
+  // Remove any previously added button before appending
+  pocketSide.querySelectorAll('button').forEach(b => b.remove());
+  pocketSide.appendChild(pocketBtn);
   state.firstLandlord = 0;
 }
 
