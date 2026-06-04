@@ -941,8 +941,10 @@
         </div>
         <div class="setup-section" style="flex:1;min-width:0;">
           <div class="setup-label">🏌️ 球场名称</div>
-          <input type="hidden" id="courseInput">
-          <button class="course-search-btn" onclick="searchNearbyCourses()" style="width:100%;">📍 附近搜索</button>
+          <div class="course-search-row">
+            <input type="text" id="courseInput" class="course-input" placeholder="输入或搜索球场名称">
+            <button class="course-search-btn" onclick="searchNearbyCourses()">📍 附近</button>
+          </div>
           <div class="course-selected-name" id="courseSelectedName" style="margin-top:4px;"></div>
           <div class="course-list" id="courseList"></div>
         </div>
@@ -1247,14 +1249,8 @@ async function searchNearbyCourses() {
 
 function selectCourse(name) {
   document.getElementById('courseInput').value = name;
-  const el = document.getElementById('courseSelectedName');
-  el.innerHTML = `✓ ${name} <span onclick="clearCourse()" style="cursor:pointer;color:#c0392b;font-weight:700;margin-left:4px;">✕</span>`;
+  document.getElementById('courseSelectedName').textContent = '✓ ' + name;
   document.getElementById('courseList').style.display = 'none';
-}
-
-function clearCourse() {
-  document.getElementById('courseInput').value = '';
-  document.getElementById('courseSelectedName').innerHTML = '';
 }
 
 function populateStartHole() {
