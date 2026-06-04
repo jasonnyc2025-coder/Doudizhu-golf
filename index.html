@@ -744,11 +744,11 @@
   .pocket-toggle {
     padding: 9px 16px;
     background: white;
-    border: 2px solid #c9a84c;
+    border: 2px solid #27ae60;
     border-radius: 6px;
     font-size: 13px;
     font-weight: 700;
-    color: #6b3a1f;
+    color: #1a5c35;
     cursor: pointer;
     font-family: 'Noto Sans SC', sans-serif;
     transition: all 0.2s;
@@ -928,10 +928,7 @@
       </div>
 
       <div class="setup-section">
-        <div style="display:flex;align-items:center;margin-bottom:8px;">
-          <div class="setup-label" style="flex:1;margin-bottom:0;">👑 第一洞地主</div>
-          <div id="pocketModeLabel" style="font-size:14px;font-weight:700;color:#8b6914;font-family:'Noto Sans SC',sans-serif;white-space:nowrap;">💰 计分方式</div>
-        </div>
+        <div class="setup-label">👑 第一洞地主</div>
         <div class="first-landlord-select" id="firstLandlordSelect"></div>
       </div>
       <div style="display:flex;gap:16px;align-items:flex-start;">
@@ -1339,14 +1336,21 @@ function renderPlayerInputs() {
     };
     flContainer.appendChild(btn);
   }
-  // Pocket button aligned with player buttons (label is in HTML above)
+  // Pocket group: pushed far right, label above button
+  const pocketGroup = document.createElement('div');
+  pocketGroup.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;margin-left:auto;padding-left:20px;';
+  const pocketLabel = document.createElement('span');
+  pocketLabel.style.cssText = 'font-size:13px;font-weight:700;color:#8b6914;font-family:"Noto Sans SC",sans-serif;white-space:nowrap;';
+  pocketLabel.textContent = '💰 计分方式';
   const pocketBtn = document.createElement('button');
   pocketBtn.id = 'pocketModeBtn';
   pocketBtn.className = 'pocket-toggle' + (state.pocketMode ? ' active' : '');
   pocketBtn.title = '开启后：地主赢 → 地主+1分，各农民−1分';
   pocketBtn.textContent = '入口袋';
   pocketBtn.onclick = togglePocketMode;
-  flContainer.appendChild(pocketBtn);
+  pocketGroup.appendChild(pocketLabel);
+  pocketGroup.appendChild(pocketBtn);
+  flContainer.appendChild(pocketGroup);
   state.firstLandlord = 0;
 }
 
