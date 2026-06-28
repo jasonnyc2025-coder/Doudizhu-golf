@@ -729,17 +729,6 @@
 
   .history-screen { display: none; padding: 20px; }
 
-  /* PASSWORD SCREEN */
-  .password-screen {
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: center; min-height: 60vh; padding: 40px 24px;
-  }
-  .password-title {
-    font-family: 'Ma Shan Zheng', cursive;
-    font-size: 26px; color: #8b0000; margin-bottom: 8px; text-align: center;
-  }
-  .password-sub { font-size: 13px; color: #999; margin-bottom: 32px; text-align: center; }
-
   /* COURSE SEARCH */
   .pocket-toggle {
     padding: 9px 16px;
@@ -791,22 +780,6 @@
     margin-top: 6px; font-size: 13px; color: #27ae60;
     font-weight: 600; min-height: 18px;
   }
-  .password-input {
-    width: 100%; max-width: 280px; padding: 14px 16px;
-    border: 2px solid #c9a84c; border-radius: 10px;
-    font-size: 20px; text-align: center; letter-spacing: 4px;
-    font-family: 'Noto Sans SC', sans-serif; outline: none; margin-bottom: 16px;
-  }
-  .password-input:focus { border-color: #8b0000; }
-  .password-btn {
-    width: 100%; max-width: 280px; padding: 14px;
-    background: linear-gradient(135deg, #8b0000, #c0392b);
-    color: #ffd700; border: none; border-radius: 10px;
-    font-size: 16px; font-weight: 700; cursor: pointer;
-    font-family: 'Noto Sans SC', sans-serif; letter-spacing: 2px;
-  }
-  .password-error { color: #c0392b; font-size: 13px; margin-top: 10px; min-height: 20px; }
-  .password-set-link { margin-top: 20px; font-size: 12px; color: #aaa; cursor: pointer; text-decoration: underline; }
   .history-header {
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 16px;
@@ -886,26 +859,6 @@
   </div>
 
   <div class="main-card">
-
-    <!-- PASSWORD SCREEN -->
-    <div id="passwordScreen" class="password-screen">
-      <div class="password-title">老鹰队</div>
-      <div class="password-sub">请输入密码进入</div>
-      <input class="password-input" type="password" id="passwordInput" placeholder="••••" onkeydown="if(event.key==='Enter')checkPassword()">
-      <button class="password-btn" onclick="checkPassword()">进入</button>
-      <div class="password-error" id="passwordError"></div>
-      <div class="password-set-link" id="setPasswordLink" style="display:none" onclick="showSetPassword()">首次使用？设置密码</div>
-    </div>
-
-    <!-- SET PASSWORD SCREEN -->
-    <div id="setPasswordScreen" class="password-screen" style="display:none">
-      <div class="password-title">设置密码</div>
-      <div class="password-sub">首次使用，请设置一个密码</div>
-      <input class="password-input" type="password" id="newPasswordInput" placeholder="新密码">
-      <input class="password-input" type="password" id="confirmPasswordInput" placeholder="确认密码" style="margin-top:-8px" onkeydown="if(event.key==='Enter')doSetPassword()">
-      <button class="password-btn" onclick="doSetPassword()">保存密码</button>
-      <div class="password-error" id="setPasswordError"></div>
-    </div>
 
     <!-- SETUP SCREEN -->
     <div class="setup-screen" id="setupScreen" style="display:none">
@@ -1091,9 +1044,8 @@ let state = {
 };
 const TOTAL_HOLES = 18;
 
-// ── AUTH ───────────────────────────────────────────────────────────────
 function hideAllScreens() {
-  ['setupScreen','gameScreen','resultScreen','historyScreen','passwordScreen','setPasswordScreen'].forEach(id => {
+  ['setupScreen','gameScreen','resultScreen','historyScreen'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -1102,70 +1054,7 @@ function hideAllScreens() {
 async function initApp() {
   document.getElementById('dateDisplay').textContent = formatDate(new Date());
   hideAllScreens();
-  if (sessionStorage.getItem('ddz_auth') === 'ok') {
-    showMainApp();
-    return;
-  }
-  // Check if password is set in Firestore
-  try {
-    if (window.db) {
-      const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-      const snap = await getDoc(doc(db, 'config', 'settings'));
-      if (!snap.exists() || !snap.data().password) {
-        document.getElementById('setPasswordLink').style.display = 'block';
-      }
-    }
-  } catch(e) {}
-  document.getElementById('passwordScreen').style.display = 'flex';
-}
-
-async function checkPassword() {
-  const input = document.getElementById('passwordInput').value;
-  const errEl = document.getElementById('passwordError');
-  if (!input) { errEl.textContent = '请输入密码'; return; }
-  errEl.textContent = '验证中...';
-  try {
-    const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-    const snap = await getDoc(doc(db, 'config', 'settings'));
-    if (!snap.exists() || !snap.data().password) {
-      errEl.textContent = '还未设置密码，请点击下方链接设置';
-      document.getElementById('setPasswordLink').style.display = 'block';
-      return;
-    }
-    if (snap.data().password === input) {
-      sessionStorage.setItem('ddz_auth', 'ok');
-      document.getElementById('passwordScreen').style.display = 'none';
-      showMainApp();
-    } else {
-      errEl.textContent = '密码错误，请重试';
-      document.getElementById('passwordInput').value = '';
-    }
-  } catch(e) {
-    errEl.textContent = '网络错误，请重试';
-  }
-}
-
-function showSetPassword() {
-  document.getElementById('passwordScreen').style.display = 'none';
-  document.getElementById('setPasswordScreen').style.display = 'flex';
-}
-
-async function doSetPassword() {
-  const pw = document.getElementById('newPasswordInput').value;
-  const pw2 = document.getElementById('confirmPasswordInput').value;
-  const errEl = document.getElementById('setPasswordError');
-  if (!pw) { errEl.textContent = '请输入密码'; return; }
-  if (pw !== pw2) { errEl.textContent = '两次输入不一致'; return; }
-  errEl.textContent = '保存中...';
-  try {
-    const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-    await setDoc(doc(db, 'config', 'settings'), { password: pw });
-    sessionStorage.setItem('ddz_auth', 'ok');
-    document.getElementById('setPasswordScreen').style.display = 'none';
-    showMainApp();
-  } catch(e) {
-    errEl.textContent = '保存失败，请重试';
-  }
+  showMainApp();
 }
 
 async function showMainApp() {
