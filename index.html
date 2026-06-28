@@ -1063,11 +1063,77 @@ async function showMainApp() {
   updateFundBanner();
   renderPlayerInputs();
   populateStartHole();
+
+  // Restore in-progress game if one was saved
+  try {
+    const saved = localStorage.getItem('ddz_game_state');
+    if (saved) {
+      const snap = JSON.parse(saved);
+      if (snap && snap.step > 0 && snap.step < TOTAL_HOLES && Array.isArray(snap.players) && snap.players.length) {
+        const names = snap.players.join('、');
+        if (confirm(`发现上次未完成的比赛\n玩家：${names}\n已打：${snap.step} 洞\n\n是否继续上次比赛？`)) {
+          restoreGameState(snap);
+          return;
+        } else {
+          clearGameState();
+        }
+      } else {
+        clearGameState();
+      }
+    }
+  } catch(e) { clearGameState(); }
+
   document.getElementById('setupScreen').style.display = 'block';
 }
 
 // Wait for Firebase to init then start
 window.addEventListener('load', () => setTimeout(initApp, 300));
+
+// ── GAME STATE PERSISTENCE ─────────────────────────────────────────────
+function saveGameState() {
+  const snap = {
+    players: state.players,
+    playerCount: state.playerCount,
+    firstLandlord: state.firstLandlord,
+    currentLandlord: state.currentLandlord,
+    results: state.results,
+    step: state.step,
+    playOrder: state.playOrder,
+    startHole: state.startHole,
+    pocketMode: state.pocketMode,
+    courseName: state.courseName,
+    prevFund: state.prevFund,
+    scores: state.scores,
+    landlordHistory: state.landlordHistory,
+  };
+  localStorage.setItem('ddz_game_state', JSON.stringify(snap));
+}
+
+function clearGameState() {
+  localStorage.removeItem('ddz_game_state');
+}
+
+function restoreGameState(snap) {
+  Object.assign(state, snap);
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('resultScreen').style.display = 'none';
+  document.getElementById('gameScreen').style.display = 'block';
+  const courseDisplay = document.getElementById('gameCourseNameDisplay');
+  const headerParts = [];
+  if (state.courseName) headerParts.push('⛳ ' + state.courseName);
+  if (state.pocketMode) headerParts.push('💰 入口袋');
+  courseDisplay.textContent = headerParts.join('  ');
+  document.getElementById('holePanel').style.display = 'block';
+  const cl = document.getElementById('costList'); if (cl) cl.innerHTML = '';
+  const clr = document.getElementById('costListResult'); if (clr) clr.innerHTML = '';
+  buildScoreTable();
+  recomputeAll();
+  refreshAllRows();
+  updateCurrentHoleHighlight();
+  renderHolePanel();
+  renderTotals();
+  showToast('已恢复上次比赛进度 ✅');
+}
 
 // ── COURSE SEARCH ──────────────────────────────────────────────────────
 function togglePocketMode() {
@@ -1609,11 +1675,13 @@ function confirmHole() {
     state.currentHole = state.playOrder[state.step];
     updateCurrentHoleHighlight();
     renderHolePanel();
+    saveGameState();
   }
 
   renderTotals();
 
   if (state.step >= TOTAL_HOLES) {
+    clearGameState();
     document.getElementById('holePanel').style.display = 'none';
     showFundPreview();
     showResult();
@@ -1893,6 +1961,7 @@ function cancelGame() {
 
 function doCancelGame() {
   hideCancelConfirm();
+  clearGameState();
   // 不保存历史、不改公积金，直接回到设置页
   state.results = [];
   state.scores = [];
@@ -1937,6 +2006,7 @@ async function getHistory() {
 }
 
 async function saveHistory() {
+  clearGameState();
   const totals = getTotals();
   if (totals.every(t => t === 0)) return;
   const baseScore = Math.max(...totals);
