@@ -966,6 +966,24 @@
       </div>
 
       <button class="start-btn" onclick="startGame()">开始游戏 ▶</button>
+      <div style="text-align:center;margin-top:12px;">
+        <span onclick="showChangePassword()" style="font-size:12px;color:#aaa;cursor:pointer;text-decoration:underline;">🔑 修改密码</span>
+      </div>
+    </div>
+
+    <!-- CHANGE PASSWORD OVERLAY -->
+    <div id="changePwOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
+      <div style="background:#fffdf5;border-radius:16px;padding:32px 24px;width:88%;max-width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.3);display:flex;flex-direction:column;align-items:center;">
+        <div style="font-family:'Ma Shan Zheng',cursive;font-size:22px;color:#8b0000;margin-bottom:6px;">修改密码</div>
+        <input class="password-input" type="password" id="oldPwInput" placeholder="当前密码">
+        <input class="password-input" type="password" id="newPwInput" placeholder="新密码">
+        <input class="password-input" type="password" id="confirmPwInput" placeholder="确认新密码" onkeydown="if(event.key==='Enter')doChangePassword()">
+        <div class="password-error" id="changePwError"></div>
+        <div style="display:flex;gap:12px;margin-top:16px;width:100%;max-width:280px;">
+          <button onclick="hideChangePassword()" style="flex:1;padding:12px;background:#eee;border:none;border-radius:10px;font-size:15px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">取消</button>
+          <button onclick="doChangePassword()" style="flex:1;padding:12px;background:linear-gradient(135deg,#8b0000,#c0392b);color:#ffd700;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">保存</button>
+        </div>
+      </div>
     </div>
 
     <!-- GAME SCREEN -->
@@ -1161,6 +1179,43 @@ async function doSetPassword() {
     sessionStorage.setItem('ddz_auth', 'ok');
     document.getElementById('setPasswordScreen').style.display = 'none';
     showMainApp();
+  } catch(e) {
+    errEl.textContent = '保存失败，请重试';
+  }
+}
+
+function showChangePassword() {
+  document.getElementById('oldPwInput').value = '';
+  document.getElementById('newPwInput').value = '';
+  document.getElementById('confirmPwInput').value = '';
+  document.getElementById('changePwError').textContent = '';
+  document.getElementById('changePwOverlay').style.display = 'flex';
+}
+
+function hideChangePassword() {
+  document.getElementById('changePwOverlay').style.display = 'none';
+}
+
+async function doChangePassword() {
+  const oldPw = document.getElementById('oldPwInput').value;
+  const newPw = document.getElementById('newPwInput').value;
+  const confirmPw = document.getElementById('confirmPwInput').value;
+  const errEl = document.getElementById('changePwError');
+  if (!oldPw) { errEl.textContent = '请输入当前密码'; return; }
+  if (!newPw) { errEl.textContent = '请输入新密码'; return; }
+  if (newPw !== confirmPw) { errEl.textContent = '两次输入不一致'; return; }
+  errEl.textContent = '验证中...';
+  try {
+    const { doc, getDoc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const snap = await getDoc(doc(db, 'config', 'settings'));
+    if (!snap.exists() || snap.data().password !== oldPw) {
+      errEl.textContent = '当前密码错误';
+      document.getElementById('oldPwInput').value = '';
+      return;
+    }
+    await setDoc(doc(db, 'config', 'settings'), { password: newPw });
+    hideChangePassword();
+    showToast('密码已修改 ✅');
   } catch(e) {
     errEl.textContent = '保存失败，请重试';
   }
