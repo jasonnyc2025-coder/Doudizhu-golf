@@ -929,7 +929,7 @@
 
       <div class="setup-section" style="display:flex;gap:20px;align-items:flex-start;">
         <div style="flex:1;min-width:0;">
-          <div class="setup-label">👑 第一洞地主</div>
+          <div class="setup-label" id="landlordLabel">👑 第一洞地主</div>
           <div class="first-landlord-select" id="firstLandlordSelect"></div>
         </div>
         <div id="pocketSide" style="display:flex;flex-direction:column;align-items:center;gap:6px;">
@@ -1106,6 +1106,7 @@ let state = {
   costItems: [],
   selectedWinner: null,
   pocketMode: false,
+  fixedLandlord: false,
 };
 const TOTAL_HOLES = 18;
 
@@ -1265,6 +1266,7 @@ function saveGameState() {
     playOrder: state.playOrder,
     startHole: state.startHole,
     pocketMode: state.pocketMode,
+    fixedLandlord: state.fixedLandlord,
     courseName: state.courseName,
     prevFund: state.prevFund,
     scores: state.scores,
@@ -1286,6 +1288,7 @@ function restoreGameState(snap) {
   const headerParts = [];
   if (state.courseName) headerParts.push('⛳ ' + state.courseName);
   if (state.pocketMode) headerParts.push('💰 入口袋');
+  if (state.fixedLandlord) headerParts.push('🔒 固定地主');
   courseDisplay.textContent = headerParts.join('  ');
   document.getElementById('holePanel').style.display = 'block';
   const cl = document.getElementById('costList'); if (cl) cl.innerHTML = '';
@@ -1304,6 +1307,13 @@ function togglePocketMode() {
   const btn = document.getElementById('pocketModeBtn');
   btn.classList.toggle('active');
   state.pocketMode = btn.classList.contains('active');
+}
+
+function toggleFixedLandlord() {
+  const btn = document.getElementById('fixedLandlordBtn');
+  btn.classList.toggle('active');
+  state.fixedLandlord = btn.classList.contains('active');
+  document.getElementById('landlordLabel').textContent = state.fixedLandlord ? '👑 整场地主' : '👑 第一洞地主';
 }
 
 async function searchNearbyCourses() {
@@ -1459,18 +1469,28 @@ function renderPlayerInputs() {
     };
     flContainer.appendChild(btn);
   }
-  // Pocket button goes into the separate right column
+  // Pocket + fixed-landlord buttons go into the separate right column
   const pocketSide = document.getElementById('pocketSide');
+  pocketSide.querySelectorAll('button').forEach(b => b.remove());
+
   const pocketBtn = document.createElement('button');
   pocketBtn.id = 'pocketModeBtn';
   pocketBtn.className = 'pocket-toggle' + (state.pocketMode ? ' active' : '');
   pocketBtn.title = '开启后：地主赢 → 地主+1分，各农民−1分';
   pocketBtn.textContent = '入口袋';
   pocketBtn.onclick = togglePocketMode;
-  // Remove any previously added button before appending
-  pocketSide.querySelectorAll('button').forEach(b => b.remove());
   pocketSide.appendChild(pocketBtn);
+
+  const fixedBtn = document.createElement('button');
+  fixedBtn.id = 'fixedLandlordBtn';
+  fixedBtn.className = 'pocket-toggle' + (state.fixedLandlord ? ' active' : '');
+  fixedBtn.title = '整场比赛只有一个地主，不轮换';
+  fixedBtn.textContent = '固定地主';
+  fixedBtn.onclick = toggleFixedLandlord;
+  pocketSide.appendChild(fixedBtn);
+
   state.firstLandlord = 0;
+  document.getElementById('landlordLabel').textContent = state.fixedLandlord ? '👑 整场地主' : '👑 第一洞地主';
 }
 
 function startGame() {
@@ -1483,6 +1503,7 @@ function startGame() {
   state.prevFund = parseFloat(document.getElementById('prevFundInput').value) || 0;
   state.courseName = document.getElementById('courseInput').value.trim();
   state.pocketMode = document.getElementById('pocketModeBtn').classList.contains('active');
+  state.fixedLandlord = document.getElementById('fixedLandlordBtn').classList.contains('active');
   state.cost = 0;
   state.costItems = [];
   state.startHole = parseInt(document.getElementById('startHoleSelect').value) || 0;
@@ -1508,6 +1529,7 @@ function startGame() {
   let headerParts = [];
   if (state.courseName) headerParts.push('⛳ ' + state.courseName);
   if (state.pocketMode) headerParts.push('💰 入口袋');
+  if (state.fixedLandlord) headerParts.push('🔒 固定地主');
   courseDisplay.textContent = headerParts.join('  ');
 
   // 重置面板显示状态
@@ -1873,8 +1895,8 @@ function recomputeAll() {
     }
     state.scores[h] = delta;
     state.landlordHistory[h] = land;
-    // 下一洞地主
-    if (type === 'farmer') land = playerIdx;
+    // 下一洞地主（固定地主模式下不轮换）
+    if (type === 'farmer' && !state.fixedLandlord) land = playerIdx;
   }
   // 当前应轮到的地主 = 最后已打洞之后的地主
   state.currentLandlord = land;
