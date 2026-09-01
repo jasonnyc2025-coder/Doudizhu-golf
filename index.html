@@ -1501,7 +1501,7 @@ function renderHolePanel() {
 
   const titleEl = document.getElementById('holePanelTitle');
   if (editing) {
-    titleEl.innerHTML = `✏️ 修改第 ${h+1} 洞 <button onclick="cancelEdit()" style="font-size:12px;padding:3px 10px;margin-left:8px;background:#999;color:#fff;border:none;border-radius:6px;font-family:'Noto Sans SC',sans-serif;cursor:pointer;vertical-align:middle;">取消</button>`;
+    titleEl.innerHTML = `✏️ 修改第 ${h+1} 洞 <button onclick="cancelEdit()" style="font-size:12px;padding:3px 10px;margin-left:8px;background:#999;color:#fff;border:none;border-radius:6px;font-family:'Noto Sans SC',sans-serif;cursor:pointer;vertical-align:middle;">取消</button><button onclick="clearHoleFrom(${h})" style="font-size:12px;padding:3px 10px;margin-left:6px;background:#c0392b;color:#fff;border:none;border-radius:6px;font-family:'Noto Sans SC',sans-serif;cursor:pointer;vertical-align:middle;">🗑 清除此洞及之后</button>`;
   } else {
     titleEl.textContent = `第 ${h+1} 洞`;
   }
@@ -1776,6 +1776,27 @@ function editHole(h) {
 function cancelEdit() {
   state.editingHole = null;
   renderHolePanel();
+}
+
+// 清除从第 h 洞起（按 playOrder 顺序）所有已记录的结果，回退到该洞重新记分
+function clearHoleFrom(h) {
+  const pos = state.playOrder.indexOf(h);
+  if (pos < 0) return;
+  // 清除该位置及之后所有洞的结果
+  for (let s = pos; s < state.playOrder.length; s++) {
+    const hole = state.playOrder[s];
+    delete state.results[hole];
+  }
+  state.step = pos;
+  state.editingHole = null;
+  state.selectedWinner = null;
+  recomputeAll();
+  state.currentHole = state.playOrder[pos];
+  refreshAllRows();
+  renderHolePanel();
+  renderTotals();
+  saveGameState();
+  showToast(`已清除第 ${h+1} 洞及之后的记录，请重新记分`);
 }
 
 function scrollToCurrentHole() {
