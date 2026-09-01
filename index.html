@@ -1626,13 +1626,17 @@ function pickNextHole(h) {
     document.getElementById('holePicker').style.display = 'none';
     return;
   }
-  // 把 h 从 playOrder 现在位置移到 state.step (下一个要打的位置)
-  const oldIdx = state.playOrder.indexOf(h);
-  if (oldIdx < state.step) return; // 已打过的洞不允许选
-  state.playOrder.splice(oldIdx, 1);
-  state.playOrder.splice(state.step, 0, h);
+  if (state.results[h]) return; // 已打过的洞不允许选
+  // 从 h 开始，按照 h, h+1, ..., 17, 0, 1, ..., h-1 的循环顺序
+  // 重排所有未打的洞，这样打完 h 后自然接着 h+1
+  const remaining = [];
+  for (let k = 0; k < TOTAL_HOLES; k++) {
+    const idx = (h + k) % TOTAL_HOLES;
+    if (!state.results[idx]) remaining.push(idx);
+  }
+  state.playOrder = state.playOrder.slice(0, state.step).concat(remaining);
   state.currentHole = h;
-  renderHolePanel();          // 会自动隐藏 picker
+  renderHolePanel();
   updateCurrentHoleHighlight();
   scrollToCurrentHole();
   showToast('已切换到第 ' + (h+1) + ' 洞');
