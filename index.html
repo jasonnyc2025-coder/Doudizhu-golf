@@ -1558,7 +1558,7 @@ function addWinnerBtn(container, label, type, playerIdx, land, cur) {
       document.getElementById('confirmBtn').disabled = false;
     } else {
       // 显示倍率面板，等用户挑 普通/小鸟/老鹰
-      renderMultBtns(cur && cur.type === type && (type !== 'farmer' || cur.playerIdx === playerIdx) ? (cur.mult || 1) : null);
+      renderMultBtns(cur && cur.type === type && (type !== 'farmer' || cur.playerIdx === playerIdx) ? (cur.mult || 1) : 1);
     }
   };
   btn.onclick = select;
