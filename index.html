@@ -890,7 +890,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v96</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v97</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -1412,6 +1412,10 @@ function clearGameState() {
 
 function restoreGameState(snap) {
   Object.assign(state, snap);
+  try {
+    const ref = JSON.parse(localStorage.getItem('ddz_saved_ref') || 'null');
+    if (ref) { state.savedDocId = ref.id; state.savedTimestamp = ref.ts; }
+  } catch(e) {}
   document.getElementById('setupScreen').style.display = 'none';
   document.getElementById('resultScreen').style.display = 'none';
   document.getElementById('gameScreen').style.display = 'block';
@@ -2315,17 +2319,18 @@ function recalcFund() {
 
 async function finishGame() {
   if (state.savedTimestamp) {
-    await updateSavedCost(); // final sync of expenses
+    await updateSavedCost();
   } else {
-    await saveHistory(); // first save (no expenses were added, saveHistory was skipped before)
+    await saveHistory();
   }
-  showToast('比赛记录已保存 ✅');
+  showToast(state.savedTimestamp ? '比赛记录已保存 ✅' : '比赛已完成（平局无记录）');
   await newGame();
 }
 
 async function newGame() {
   state.savedDocId = null;
   state.savedTimestamp = null;
+  localStorage.removeItem('ddz_saved_ref');
   const newFund = await loadFund();
   updateFundBanner();
   document.getElementById('prevFundInput').value = newFund;
@@ -2337,17 +2342,18 @@ function cancelGame() {
   showCancelConfirm();
 }
 
-function earlyFinish() {
+async function earlyFinish() {
   const holesPlayed = state.step;
   if (holesPlayed === 0) { showToast('还没有记分，无法结束'); return; }
   if (confirm(`已打 ${holesPlayed} 洞，提前结束并结算？\n（成绩将按已打的 ${holesPlayed} 洞计算）`)) {
-    showResult();
+    await showResult();
   }
 }
 
 function doCancelGame() {
   hideCancelConfirm();
   clearGameState();
+  localStorage.removeItem('ddz_saved_ref');
   // 不保存历史、不改公积金，直接回到设置页
   state.results = [];
   state.scores = [];
@@ -2357,6 +2363,8 @@ function doCancelGame() {
   state.playOrder = [];
   state.editingHole = null;
   state.selectedWinner = null;
+  state.savedDocId = null;
+  state.savedTimestamp = null;
   state.cost = 0;
   state.costItems = [];
 
@@ -2412,6 +2420,7 @@ async function syncFundToHistory() {
 }
 
 async function saveHistory() {
+  if (state.savedTimestamp) return; // idempotency guard: don't create duplicates
   clearGameState();
   const totals = getTotals();
   if (totals.every(t => t === 0) && state.cost === 0) return;
@@ -2441,6 +2450,7 @@ async function saveHistory() {
       const docRef = await addDoc(collection(db, 'history'), record);
       state.savedDocId = docRef.id;
       state.savedTimestamp = record.timestamp;
+      localStorage.setItem('ddz_saved_ref', JSON.stringify({ id: docRef.id, ts: record.timestamp }));
       return;
     }
   } catch(e) {}
@@ -2448,6 +2458,7 @@ async function saveHistory() {
   hist.unshift(record);
   localStorage.setItem('ddz_history', JSON.stringify(hist));
   state.savedTimestamp = record.timestamp;
+  localStorage.setItem('ddz_saved_ref', JSON.stringify({ id: null, ts: record.timestamp }));
 }
 
 // Called after each expense change to update the already-saved record
