@@ -855,6 +855,22 @@
     .fund-grid { grid-template-columns: 1fr 1fr; }
     .header h1 { font-size: 24px; }
   }
+  .pin-btn {
+    width:82px;height:82px;border-radius:50%;border:1.5px solid rgba(255,215,0,0.35);
+    background:rgba(255,255,255,0.08);color:#fff;font-size:26px;font-weight:400;
+    cursor:pointer;font-family:'Noto Sans SC',sans-serif;
+    transition:background 0.15s,transform 0.1s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .pin-btn:active { background:rgba(255,215,0,0.25);transform:scale(0.93); }
+  @keyframes pinShake {
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-10px)}
+    40%{transform:translateX(10px)}
+    60%{transform:translateX(-8px)}
+    80%{transform:translateX(8px)}
+  }
+  .pin-shake { animation:pinShake 0.4s ease; }
 </style>
 </head>
 <body>
@@ -873,7 +889,10 @@
     <div>
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
-      <button onclick="forceUpdate()" style="margin-top:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v93</button>
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v94</button>
+        <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
+      </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
       <button class="history-btn" onclick="showHistory()">📜 详细记录</button>
@@ -1113,6 +1132,30 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- PIN OVERLAY -->
+<div id="pinOverlay" style="display:none;position:fixed;inset:0;background:linear-gradient(160deg,#1a0800 0%,#3d1500 50%,#1a0800 100%);z-index:9999;flex-direction:column;align-items:center;justify-content:center;">
+  <div style="font-family:'Ma Shan Zheng',cursive;font-size:40px;color:#ffd700;letter-spacing:4px;margin-bottom:4px;">老鹰队</div>
+  <div style="font-size:13px;color:rgba(255,215,0,0.55);letter-spacing:2px;margin-bottom:44px;font-family:'Noto Sans SC',sans-serif;">高尔夫斗地主记分</div>
+  <div id="pinTitle" style="font-size:17px;font-weight:600;color:#fff;margin-bottom:24px;font-family:'Noto Sans SC',sans-serif;letter-spacing:1px;"></div>
+  <div id="pinDots" style="display:flex;gap:18px;margin-bottom:14px;"></div>
+  <div id="pinError" style="height:22px;font-size:13px;color:#ff7675;font-family:'Noto Sans SC',sans-serif;margin-bottom:28px;text-align:center;"></div>
+  <!-- Number pad -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;width:276px;">
+    <button onclick="pinPress('1')" class="pin-btn">1</button>
+    <button onclick="pinPress('2')" class="pin-btn">2</button>
+    <button onclick="pinPress('3')" class="pin-btn">3</button>
+    <button onclick="pinPress('4')" class="pin-btn">4</button>
+    <button onclick="pinPress('5')" class="pin-btn">5</button>
+    <button onclick="pinPress('6')" class="pin-btn">6</button>
+    <button onclick="pinPress('7')" class="pin-btn">7</button>
+    <button onclick="pinPress('8')" class="pin-btn">8</button>
+    <button onclick="pinPress('9')" class="pin-btn">9</button>
+    <div></div>
+    <button onclick="pinPress('0')" class="pin-btn">0</button>
+    <button onclick="pinDelete()" class="pin-btn" style="font-size:22px;">⌫</button>
+  </div>
+</div>
+
 <div id="cancelConfirmOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:24px;">
   <div style="background:var(--paper,#fef9f0);border:2px solid #c9a84c;border-radius:14px;max-width:340px;width:100%;padding:22px;box-shadow:0 10px 40px rgba(0,0,0,0.5);">
     <div style="font-family:'Ma Shan Zheng',cursive;font-size:20px;color:#c0392b;text-align:center;margin-bottom:10px;letter-spacing:2px;">取消本局游戏？</div>
@@ -1159,9 +1202,138 @@ function hideAllScreens() {
   });
 }
 
+// ── PIN ────────────────────────────────────────────────────────────────
+let _pinInput = '';
+let _pinMode = 'enter'; // enter | set | confirm | change_old | change_new | change_confirm
+let _pinTemp = '';
+let _storedPin = null;
+
+async function loadStoredPin() {
+  try {
+    if (window.db) {
+      const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+      const snap = await getDoc(doc(db, 'config', 'settings'));
+      if (snap.exists() && snap.data().pin) return snap.data().pin;
+    }
+  } catch(e) {}
+  return localStorage.getItem('ddz_pin') || null;
+}
+
+async function saveStoredPin(pin) {
+  localStorage.setItem('ddz_pin', pin);
+  try {
+    if (window.db) {
+      const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+      await setDoc(doc(db, 'config', 'settings'), { pin }, { merge: true });
+    }
+  } catch(e) {}
+}
+
+function _showPinScreen(title) {
+  _pinInput = '';
+  document.getElementById('pinTitle').textContent = title;
+  document.getElementById('pinError').textContent = '';
+  _updatePinDots();
+  document.getElementById('pinOverlay').style.display = 'flex';
+}
+function _hidePinScreen() { document.getElementById('pinOverlay').style.display = 'none'; }
+
+function _updatePinDots() {
+  document.getElementById('pinDots').innerHTML = Array.from({length:4}, (_,i) =>
+    `<div style="width:16px;height:16px;border-radius:50%;border:2px solid #ffd700;background:${i < _pinInput.length ? '#ffd700' : 'transparent'};transition:background 0.1s;box-shadow:${i < _pinInput.length ? '0 0 8px rgba(255,215,0,0.6)' : 'none'};"></div>`
+  ).join('');
+}
+
+function _pinShake() {
+  const el = document.getElementById('pinDots');
+  el.classList.remove('pin-shake');
+  void el.offsetWidth;
+  el.classList.add('pin-shake');
+  setTimeout(() => el.classList.remove('pin-shake'), 400);
+}
+
+function pinPress(d) {
+  if (_pinInput.length >= 4) return;
+  _pinInput += d;
+  _updatePinDots();
+  if (_pinInput.length === 4) setTimeout(pinSubmit, 150);
+}
+
+function pinDelete() {
+  if (_pinInput.length > 0) { _pinInput = _pinInput.slice(0,-1); _updatePinDots(); }
+}
+
+async function pinSubmit() {
+  const inp = _pinInput;
+  if (_pinMode === 'enter') {
+    if (inp === _storedPin) {
+      sessionStorage.setItem('ddz_unlocked','1');
+      _hidePinScreen();
+      showToast('欢迎回来 ✅');
+    } else {
+      document.getElementById('pinError').textContent = '密码错误，请重试';
+      _pinShake(); _pinInput = ''; _updatePinDots();
+    }
+  } else if (_pinMode === 'set') {
+    _pinTemp = inp; _pinMode = 'confirm'; _pinInput = ''; _updatePinDots();
+    document.getElementById('pinTitle').textContent = '再次确认密码';
+    document.getElementById('pinError').textContent = '';
+  } else if (_pinMode === 'confirm') {
+    if (inp === _pinTemp) {
+      await saveStoredPin(inp); _storedPin = inp;
+      sessionStorage.setItem('ddz_unlocked','1');
+      _hidePinScreen(); showToast('密码设置成功 ✅');
+    } else {
+      document.getElementById('pinError').textContent = '两次输入不一致，请重试';
+      _pinShake(); _pinTemp = ''; _pinMode = 'set'; _pinInput = ''; _updatePinDots();
+      document.getElementById('pinTitle').textContent = '请设置4位密码';
+    }
+  } else if (_pinMode === 'change_old') {
+    if (inp === _storedPin) {
+      _pinMode = 'change_new'; _pinInput = ''; _updatePinDots();
+      document.getElementById('pinTitle').textContent = '请输入新密码';
+      document.getElementById('pinError').textContent = '';
+    } else {
+      document.getElementById('pinError').textContent = '密码错误';
+      _pinShake(); _pinInput = ''; _updatePinDots();
+    }
+  } else if (_pinMode === 'change_new') {
+    _pinTemp = inp; _pinMode = 'change_confirm'; _pinInput = ''; _updatePinDots();
+    document.getElementById('pinTitle').textContent = '再次确认新密码';
+    document.getElementById('pinError').textContent = '';
+  } else if (_pinMode === 'change_confirm') {
+    if (inp === _pinTemp) {
+      await saveStoredPin(inp); _storedPin = inp;
+      _hidePinScreen(); showToast('密码已修改 ✅');
+    } else {
+      document.getElementById('pinError').textContent = '两次输入不一致，请重试';
+      _pinShake(); _pinTemp = ''; _pinMode = 'change_new'; _pinInput = ''; _updatePinDots();
+      document.getElementById('pinTitle').textContent = '请输入新密码';
+    }
+  }
+}
+
+function showChangePinDialog() {
+  _pinMode = 'change_old';
+  _showPinScreen('请输入当前密码');
+}
+
+async function initPin() {
+  if (sessionStorage.getItem('ddz_unlocked') === '1') return; // already unlocked
+  _storedPin = await loadStoredPin();
+  if (!_storedPin) {
+    _pinMode = 'set';
+    _showPinScreen('首次使用，请设置4位密码');
+  } else {
+    _pinMode = 'enter';
+    _showPinScreen('请输入密码');
+  }
+}
+
 async function initApp() {
   document.getElementById('dateDisplay').textContent = formatDate(new Date());
   hideAllScreens();
+  await initPin();
   showMainApp();
 }
 
