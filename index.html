@@ -874,7 +874,7 @@
     <div>
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
-      <button onclick="forceUpdate()" style="margin-top:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v78</button>
+      <button onclick="forceUpdate()" style="margin-top:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v79</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
       <button class="history-btn" onclick="showHistory()">📜 详细记录</button>
@@ -984,16 +984,8 @@
         </div>
       </div>
 
-      <div class="setup-section">
-        <div class="fund-section">
-          <div class="setup-label" style="margin-bottom:10px;">🏦 公积金结余</div>
-          <div class="fund-row">
-            <label>上次结余 (฿)</label>
-            <input type="number" class="fund-input" id="prevFundInput" placeholder="0" min="0" value="0" oninput="saveFund(this.value||0); updateFundBanner();">
-          </div>
-          <div class="fund-note">1分 = ฿100 · 费用在游戏结束后输入</div>
-        </div>
-      </div>
+      <!-- prevFundInput hidden, value set programmatically -->
+      <input type="hidden" id="prevFundInput" value="0">
 
       <button class="start-btn" onclick="startGame()">开始游戏 ▶</button>
       <div style="text-align:center;margin-top:16px;font-size:12px;color:#bbb;">版本 v59</div>
