@@ -876,7 +876,7 @@
       <div>
         <span class="fund-banner-label">🏦 当前公积金结余</span>
         <div class="fund-banner-value" id="fundBannerValue">฿0</div>
-        <div style="font-size:14px;color:rgba(255,215,0,0.85);margin-top:4px;font-weight:700;letter-spacing:1px;">v69</div>
+        <div style="font-size:14px;color:rgba(255,215,0,0.85);margin-top:4px;font-weight:700;letter-spacing:1px;">v70</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
         <button class="history-btn" onclick="showHistory()">📜 详细记录</button>
@@ -2492,9 +2492,15 @@ async function renderHistory() {
           </div>
         </div>
         <div class="history-players">${players}</div>
-        <div class="history-fund">
-          <span>上次 ฿${r.prevFund.toLocaleString()} ＋贡献 ฿${r.contribution.toLocaleString()} −费用 ฿${r.cost.toLocaleString()}</span>
-          <span class="new">＝ ฿${r.newFund.toLocaleString()}</span>
+        <div class="history-fund" style="flex-direction:column;gap:4px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span>贡献 ฿${r.contribution.toLocaleString()} −费用 ฿${r.cost.toLocaleString()}</span>
+            <span style="font-weight:800;color:${netColor};">${net > 0 ? '净入账 ＋฿' + net.toLocaleString() : net < 0 ? '净支出 ฿' + Math.abs(net).toLocaleString() : '净 ฿0'}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px dashed #c8e6c9;padding-top:4px;">
+            <span>上次 ฿${r.prevFund.toLocaleString()} ${net >= 0 ? '＋฿' + net.toLocaleString() : '−฿' + Math.abs(net).toLocaleString()}</span>
+            <span class="new">＝ ฿${r.newFund.toLocaleString()}</span>
+          </div>
         </div>
       </div>`;
   }).join('');
