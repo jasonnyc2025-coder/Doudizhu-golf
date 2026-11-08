@@ -873,7 +873,7 @@
     <div>
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
-      <button onclick="forceUpdate()" style="margin-top:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v86</button>
+      <button onclick="forceUpdate()" style="margin-top:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v87</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
       <button class="history-btn" onclick="showHistory()">📜 详细记录</button>
@@ -1127,6 +1127,8 @@ let state = {
   selectedWinner: null,
   pocketMode: false,
   fixedLandlord: false,
+  savedDocId: null,
+  savedTimestamp: null,
 };
 const TOTAL_HOLES = 18;
 
@@ -1984,6 +1986,7 @@ function addCostResult() {
   inp.value = '';
   renderCostListResult();
   recalcFund();
+  updateSavedCost();
 }
 
 function removeCostResult(idx) {
@@ -1991,6 +1994,7 @@ function removeCostResult(idx) {
   state.cost = state.costItems.reduce((s,x) => s + x, 0);
   renderCostListResult();
   recalcFund();
+  updateSavedCost();
 }
 
 function renderCostListResult() {
@@ -2048,6 +2052,7 @@ async function showResult() {
   const rcd = document.getElementById('resultCourseNameDisplay');
   rcd.textContent = state.courseName ? '⛳ ' + state.courseName : '';
   renderCostListResult();
+  await saveHistory(); // auto-save immediately; expenses update it via updateSavedCost()
 
   const totals = getTotals();
   const baseScore = Math.max(...totals);  // 输得最少的人（分数最高）作为基准
@@ -2102,12 +2107,14 @@ function recalcFund() {
 }
 
 async function finishGame() {
-  await saveHistory();
+  await updateSavedCost(); // final sync of expenses; record was already created in showResult()
   showToast('比赛记录已保存 ✅');
   await newGame();
 }
 
 async function newGame() {
+  state.savedDocId = null;
+  state.savedTimestamp = null;
   const newFund = await loadFund();
   updateFundBanner();
   document.getElementById('prevFundInput').value = newFund;
@@ -2191,13 +2198,43 @@ async function saveHistory() {
   try {
     if (window.db) {
       const { collection, addDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-      await addDoc(collection(db, 'history'), record);
+      const docRef = await addDoc(collection(db, 'history'), record);
+      state.savedDocId = docRef.id;
+      state.savedTimestamp = record.timestamp;
       return;
     }
   } catch(e) {}
   const hist = JSON.parse(localStorage.getItem('ddz_history') || '[]');
   hist.unshift(record);
   localStorage.setItem('ddz_history', JSON.stringify(hist));
+  state.savedTimestamp = record.timestamp;
+}
+
+// Called after each expense change to update the already-saved record
+async function updateSavedCost() {
+  if (!state.savedTimestamp) return;
+  const cost = state.cost || 0;
+  const totals = getTotals();
+  const baseScore = Math.max(...totals);
+  const adjusted = totals.map(t => Math.abs(t - baseScore));
+  const contribution = adjusted.reduce((s,t) => s + t, 0) * 100;
+  const newFund = state.prevFund + contribution - cost;
+  const patch = { cost, costItems: state.costItems.slice(), newFund };
+  try {
+    if (window.db && state.savedDocId) {
+      const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+      await updateDoc(doc(db, 'history', state.savedDocId), patch);
+      saveFund(newFund); updateFundBanner();
+      return;
+    }
+  } catch(e) {}
+  // localStorage fallback
+  try {
+    const hist = JSON.parse(localStorage.getItem('ddz_history') || '[]');
+    const idx = hist.findIndex(r => r.timestamp === state.savedTimestamp);
+    if (idx >= 0) { Object.assign(hist[idx], patch); localStorage.setItem('ddz_history', JSON.stringify(hist)); }
+  } catch(e) {}
+  saveFund(newFund); updateFundBanner();
 }
 
 function showHistory() {
