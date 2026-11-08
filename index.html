@@ -890,7 +890,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v95</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v96</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -1021,7 +1021,10 @@
 
       <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#fdf6e3;border-bottom:1px solid #e8d5a0;">
         <div id="gameCourseNameDisplay" style="font-size:13px;font-weight:600;color:#6b3a1f;letter-spacing:0.5px;"></div>
-        <button onclick="cancelGame()" style="background:none;border:1.5px solid #c0392b;color:#c0392b;padding:6px 14px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">✕ 取消游戏</button>
+        <div style="display:flex;gap:8px;">
+          <button onclick="earlyFinish()" style="background:none;border:1.5px solid #e67e22;color:#e67e22;padding:6px 14px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🏁 提前结束</button>
+          <button onclick="cancelGame()" style="background:none;border:1.5px solid #c0392b;color:#c0392b;padding:6px 14px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">✕ 取消游戏</button>
+        </div>
       </div>
 
       <div class="scoreboard">
@@ -2332,6 +2335,14 @@ async function newGame() {
 
 function cancelGame() {
   showCancelConfirm();
+}
+
+function earlyFinish() {
+  const holesPlayed = state.step;
+  if (holesPlayed === 0) { showToast('还没有记分，无法结束'); return; }
+  if (confirm(`已打 ${holesPlayed} 洞，提前结束并结算？\n（成绩将按已打的 ${holesPlayed} 洞计算）`)) {
+    showResult();
+  }
 }
 
 function doCancelGame() {
