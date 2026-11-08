@@ -875,7 +875,7 @@
       <div>
         <span class="fund-banner-label">🏦 当前公积金结余</span>
         <div class="fund-banner-value" id="fundBannerValue">฿0</div>
-        <div style="font-size:14px;color:rgba(255,215,0,0.85);margin-top:4px;font-weight:700;letter-spacing:1px;">v65</div>
+        <div style="font-size:14px;color:rgba(255,215,0,0.85);margin-top:4px;font-weight:700;letter-spacing:1px;">v66</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
         <button class="history-btn" onclick="showHistory()">📜 详细记录</button>
@@ -913,6 +913,17 @@
         <button onclick="hideDepositDialog()" style="flex:1;padding:12px;background:#eee;border:none;border-radius:10px;font-size:15px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">取消</button>
         <button onclick="doDeposit()" style="flex:1;padding:12px;background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">确认存入</button>
       </div>
+    </div>
+  </div>
+
+  <!-- GAME DETAIL OVERLAY -->
+  <div id="gameDetailOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:flex-end;justify-content:center;" onclick="hideGameDetail()">
+    <div style="background:#fffdf5;border-radius:20px 20px 0 0;padding:24px 20px 36px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;box-shadow:0 -4px 24px rgba(0,0,0,0.25);" onclick="event.stopPropagation()">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div style="font-family:'Ma Shan Zheng',cursive;font-size:22px;color:var(--red);">🎮 比赛详情</div>
+        <button onclick="hideGameDetail()" style="width:32px;height:32px;border-radius:50%;border:none;background:#eee;font-size:18px;cursor:pointer;color:#666;display:flex;align-items:center;justify-content:center;">×</button>
+      </div>
+      <div id="gameDetailContent"></div>
     </div>
   </div>
 
@@ -1108,6 +1119,8 @@
 </div>
 
 <script>
+let _ledgerHistory = [];
+
 // ── STATE ──────────────────────────────────────────────────────────────
 let state = {
   playerCount: 4,
@@ -2215,8 +2228,10 @@ async function renderLedger() {
     return;
   }
 
-  list.innerHTML = hist.map((r) => {
+  _ledgerHistory = hist;
+  list.innerHTML = hist.map((r, idx) => {
     let typeLabel, typeColor, net, netStr, netColor, detail = '', sub = '';
+    const isGame = !r.type || r.type === 'game';
 
     if (r.type === 'deposit') {
       typeLabel = '💵 存入现金';
@@ -2246,17 +2261,22 @@ async function renderLedger() {
     }
 
     const borderColor = net > 0 ? '#27ae60' : net < 0 ? '#e74c3c' : '#c9a84c';
+    const clickable = isGame ? `onclick="showGameDetail(${idx})" style="border-left:5px solid ${borderColor};cursor:pointer;active:opacity:0.8;"` : `style="border-left:5px solid ${borderColor};"`;
+    const arrow = isGame ? `<div style="font-size:18px;color:#bbb;margin-left:6px;align-self:center;">›</div>` : '';
     return `
-      <div class="ledger-row" style="border-left:5px solid ${borderColor};">
+      <div class="ledger-row" ${clickable}>
         <div style="flex:1;min-width:0;">
           <div class="ledger-type" style="color:${typeColor}">${typeLabel}</div>
           <div class="ledger-date">${r.date}</div>
           ${detail ? `<div class="ledger-detail">${detail}</div>` : ''}
           ${sub ? `<div class="ledger-sub">${sub}</div>` : ''}
         </div>
-        <div>
-          <div class="ledger-amount" style="color:${netColor}">${netStr}</div>
-          <div class="ledger-balance">余额 ฿${(r.newFund||0).toLocaleString()}</div>
+        <div style="display:flex;align-items:center;gap:0;">
+          <div>
+            <div class="ledger-amount" style="color:${netColor}">${netStr}</div>
+            <div class="ledger-balance">余额 ฿${(r.newFund||0).toLocaleString()}</div>
+          </div>
+          ${arrow}
         </div>
       </div>`;
   }).join('');
@@ -2358,6 +2378,49 @@ async function doDeposit() {
   hideDepositDialog();
   document.getElementById('prevFundInput').value = newFund;
   showToast('已存入 ฿' + amount.toLocaleString() + ' ✅');
+}
+
+function showGameDetail(idx) {
+  const r = _ledgerHistory[idx];
+  if (!r || (r.type && r.type !== 'game')) return;
+  const players = Array.isArray(r.players) ? r.players.map((p, i) => {
+    const adj = r.adjusted ? r.adjusted[i] : 0;
+    const amt = r.amounts ? r.amounts[i] : 0;
+    const isWinner = adj === 0;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:${isWinner ? '#f0fdf4' : '#fff8f8'};border-radius:8px;margin-bottom:6px;border:1px solid ${isWinner ? '#a3e6b5' : '#f5c5c5'};">
+      <div style="font-size:17px;font-weight:700;color:#333;">${p}</div>
+      <div style="text-align:right;">
+        ${isWinner
+          ? '<span style="font-size:16px;color:#27ae60;font-weight:700;">0分 🏆</span>'
+          : `<span style="font-size:16px;color:#c0392b;font-weight:700;">输${adj}分 &nbsp;฿${(amt||0).toLocaleString()}</span>`}
+      </div>
+    </div>`;
+  }).join('') : '';
+  const contrib = r.contribution || 0;
+  const cost = r.cost || 0;
+  document.getElementById('gameDetailContent').innerHTML = `
+    <div style="font-size:14px;color:#888;margin-bottom:4px;">📅 ${r.date}</div>
+    ${r.courseName ? `<div style="font-size:15px;color:#1a5c35;font-weight:700;margin-bottom:14px;">⛳ ${r.courseName}</div>` : '<div style="margin-bottom:14px;"></div>'}
+    <div style="margin-bottom:14px;">${players}</div>
+    <div style="background:#f0f7f0;border-radius:10px;padding:12px 14px;font-size:14px;color:#1a5c35;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <span>上次余额</span><span style="font-weight:700;">฿${(r.prevFund||0).toLocaleString()}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <span>贡献入账</span><span style="font-weight:700;color:#27ae60;">+฿${contrib.toLocaleString()}</span>
+      </div>
+      ${cost > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <span>费用支出</span><span style="font-weight:700;color:#c0392b;">-฿${cost.toLocaleString()}</span>
+      </div>` : ''}
+      <div style="border-top:1px solid #c3e6c8;margin-top:6px;padding-top:8px;display:flex;justify-content:space-between;">
+        <span style="font-weight:700;">本局结余</span><span style="font-size:18px;font-weight:900;color:#1a5c35;">฿${(r.newFund||0).toLocaleString()}</span>
+      </div>
+    </div>`;
+  document.getElementById('gameDetailOverlay').style.display = 'flex';
+}
+
+function hideGameDetail() {
+  document.getElementById('gameDetailOverlay').style.display = 'none';
 }
 
 async function renderHistory() {
