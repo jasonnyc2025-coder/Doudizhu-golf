@@ -92,7 +92,8 @@
     border-right: 2px solid var(--gold);
     padding: 10px 20px;
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
   }
   .fund-banner-label {
     font-size: 13px;
@@ -869,25 +870,22 @@
     <div class="header-sub">高尔夫斗地主记分</div>
   </div>
 
-  <div class="fund-banner" id="fundBanner" style="flex-direction:column;">
-    <!-- Row 1: Balance + small utility buttons -->
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <div>
-        <span class="fund-banner-label">🏦 当前公积金结余</span>
-        <div class="fund-banner-value" id="fundBannerValue">฿0</div>
-        <div style="font-size:14px;color:rgba(255,215,0,0.85);margin-top:4px;font-weight:700;letter-spacing:1px;">v71</div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
-        <button class="history-btn" onclick="showHistory()">📜 详细记录</button>
-        <button class="history-btn" onclick="showDepositDialog()" style="background:rgba(39,174,96,0.25);border-color:rgba(39,174,96,0.6);">💵 存入现金</button>
-        <button class="history-btn" onclick="showAdjustDialog()" style="background:rgba(52,152,219,0.25);border-color:rgba(52,152,219,0.6);">⚙️ 修正余额</button>
-      </div>
+  <div class="fund-banner" id="fundBanner">
+    <div>
+      <span class="fund-banner-label">🏦 当前公积金结余</span>
+      <div class="fund-banner-value" id="fundBannerValue">฿0</div>
+      <div style="font-size:14px;color:rgba(255,215,0,0.85);margin-top:4px;font-weight:700;letter-spacing:1px;">v72</div>
     </div>
-    <!-- Row 2: 记账本 + 开始比赛 side by side -->
-    <div style="display:flex;gap:10px;">
-      <button onclick="showLedger()" style="flex:1;padding:14px 0;font-size:18px;font-weight:900;color:#1a3300;background:linear-gradient(135deg,#f1c40f,#e67e22);border:none;border-radius:12px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;letter-spacing:2px;box-shadow:0 3px 10px rgba(0,0,0,0.2);">📒 记账本</button>
-      <button onclick="goToSetup()" style="flex:1;padding:14px 0;font-size:18px;font-weight:900;color:#ffd700;background:linear-gradient(135deg,#8b0000,#c0392b);border:none;border-radius:12px;cursor:pointer;font-family:'Ma Shan Zheng',cursive;letter-spacing:3px;box-shadow:0 4px 14px rgba(139,0,0,0.5);">🎮 开始比赛</button>
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+      <button class="history-btn" onclick="showHistory()">📜 详细记录</button>
+      <button class="history-btn" onclick="showDepositDialog()" style="background:rgba(39,174,96,0.25);border-color:rgba(39,174,96,0.6);">💵 存入现金</button>
+      <button class="history-btn" onclick="showAdjustDialog()" style="background:rgba(52,152,219,0.25);border-color:rgba(52,152,219,0.6);">⚙️ 修正余额</button>
     </div>
+  </div>
+  <!-- 记账本 + 开始比赛 below the green banner -->
+  <div style="display:flex;gap:10px;padding:12px 16px;background:#0a3d18;border-left:2px solid var(--gold);border-right:2px solid var(--gold);border-bottom:2px solid var(--gold);border-radius:0 0 12px 12px;">
+    <button onclick="showLedger()" style="flex:1;padding:14px 0;font-size:19px;font-weight:900;color:#1a3300;background:linear-gradient(135deg,#f1c40f,#e67e22);border:none;border-radius:12px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;letter-spacing:2px;box-shadow:0 3px 10px rgba(0,0,0,0.25);">📒 记账本</button>
+    <button onclick="goToSetup()" style="flex:1;padding:14px 0;font-size:19px;font-weight:900;color:#ffd700;background:linear-gradient(135deg,#8b0000,#c0392b);border:none;border-radius:12px;cursor:pointer;font-family:'Ma Shan Zheng',cursive;letter-spacing:3px;box-shadow:0 4px 14px rgba(139,0,0,0.5);">🎮 开始比赛</button>
   </div>
 
   <!-- ADJUST BALANCE DIALOG -->
