@@ -873,7 +873,7 @@
     <div>
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
-      <button onclick="forceUpdate()" style="margin-top:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v89</button>
+      <button onclick="forceUpdate()" style="margin-top:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v90</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
       <button class="history-btn" onclick="showHistory()">📜 详细记录</button>
@@ -1030,13 +1030,18 @@
       <div class="fund-result" id="fundResult" style="display:none;">
         <div class="fund-title">🏦 公积金预览 <span id="fundPreviewDate" style="font-size:11px;opacity:0.7;font-family:'Noto Sans SC',sans-serif;font-weight:400;letter-spacing:0;"></span></div>
         <div style="background:rgba(0,0,0,0.18);border-radius:8px;padding:10px 12px;margin-bottom:10px;">
-          <div style="display:flex;gap:8px;align-items:center;">
-            <span style="font-size:16px;color:rgba(107,203,119,0.9);white-space:nowrap;">💰 费用</span>
-            <input type="number" id="costAddInput" placeholder="输入金额" min="0"
-              style="flex:1;padding:7px 10px;border:1.5px solid rgba(107,203,119,0.5);border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;background:rgba(255,255,255,0.95);min-width:0;"
-              onkeydown="if(event.key==='Enter')addCost()">
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-size:16px;color:rgba(107,203,119,0.9);white-space:nowrap;padding-top:8px;">💰 费用</span>
+            <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+              <input type="number" id="costAddInput" placeholder="输入金额" min="0"
+                style="width:100%;padding:7px 10px;border:1.5px solid rgba(107,203,119,0.5);border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;background:rgba(255,255,255,0.95);box-sizing:border-box;"
+                onkeydown="if(event.key==='Enter')addCost()">
+              <input type="text" id="costAddNote" placeholder="备注（选填）" maxlength="20"
+                style="width:100%;padding:5px 10px;border:1.5px solid rgba(107,203,119,0.3);border-radius:6px;font-size:12px;font-family:'Noto Sans SC',sans-serif;outline:none;background:rgba(255,255,255,0.8);box-sizing:border-box;"
+                onkeydown="if(event.key==='Enter')addCost()">
+            </div>
             <button onclick="addCost()"
-              style="padding:7px 14px;background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Noto Sans SC',sans-serif;">＋ 加</button>
+              style="padding:7px 14px;background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Noto Sans SC',sans-serif;margin-top:1px;">＋ 加</button>
           </div>
           <div id="costList" style="margin-top:8px;display:flex;flex-direction:column;gap:5px;"></div>
         </div>
@@ -1052,12 +1057,17 @@
       <div class="result-grid" id="resultGrid"></div>
       <div class="result-cost-box" style="background:#fff8e7;border:1.5px solid #c9a84c;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
         <div style="font-size:13px;font-weight:700;color:#6b3a1f;margin-bottom:10px;letter-spacing:1px;">💰 本次费用（可多笔累加）</div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <input type="number" id="costInput" placeholder="输入金额" min="0"
-            style="flex:1;padding:8px 12px;border:1.5px solid #c9a84c;border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;min-width:0;"
-            onkeydown="if(event.key==='Enter')addCostResult()">
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+            <input type="number" id="costInput" placeholder="输入金额" min="0"
+              style="width:100%;padding:8px 12px;border:1.5px solid #c9a84c;border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;box-sizing:border-box;"
+              onkeydown="if(event.key==='Enter')addCostResult()">
+            <input type="text" id="costNoteInput" placeholder="备注（选填）" maxlength="20"
+              style="width:100%;padding:6px 12px;border:1.5px solid #e8c88c;border-radius:6px;font-size:12px;font-family:'Noto Sans SC',sans-serif;outline:none;box-sizing:border-box;"
+              onkeydown="if(event.key==='Enter')addCostResult()">
+          </div>
           <button onclick="addCostResult()"
-            style="padding:8px 16px;background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Noto Sans SC',sans-serif;">＋ 加</button>
+            style="padding:8px 16px;background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Noto Sans SC',sans-serif;margin-top:1px;">＋ 加</button>
         </div>
         <div id="costListResult" style="margin-top:8px;display:flex;flex-direction:column;gap:5px;"></div>
       </div>
@@ -1943,20 +1953,26 @@ function renderTotals() {
   showFundPreview();
 }
 
+function _costAmt(c) { return typeof c === 'number' ? c : (c.amount || 0); }
+function _costNote(c) { return typeof c === 'number' ? '' : (c.note || ''); }
+
 function addCost() {
   const inp = document.getElementById('costAddInput');
+  const noteInp = document.getElementById('costAddNote');
   const v = parseFloat(inp.value);
   if (!v || v <= 0) { inp.value = ''; return; }
-  state.costItems.push(v);
-  state.cost = state.costItems.reduce((s,x) => s + x, 0);
+  const note = noteInp ? noteInp.value.trim() : '';
+  state.costItems.push({ amount: v, note });
+  state.cost = state.costItems.reduce((s,x) => s + _costAmt(x), 0);
   inp.value = '';
+  if (noteInp) noteInp.value = '';
   renderCostList();
   showFundPreview();
 }
 
 function removeCost(idx) {
   state.costItems.splice(idx, 1);
-  state.cost = state.costItems.reduce((s,x) => s + x, 0);
+  state.cost = state.costItems.reduce((s,x) => s + _costAmt(x), 0);
   renderCostList();
   showFundPreview();
 }
@@ -1964,16 +1980,14 @@ function removeCost(idx) {
 function renderCostList() {
   const list = document.getElementById('costList');
   if (!list) return;
-  if (state.costItems.length === 0) {
-    list.innerHTML = '';
-    return;
-  }
-  list.innerHTML = state.costItems.map((c,i) => `
-    <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.08);border-radius:5px;padding:4px 10px;">
-      <span style="font-size:13px;color:#fff;">฿${c.toLocaleString()}</span>
+  if (state.costItems.length === 0) { list.innerHTML = ''; return; }
+  list.innerHTML = state.costItems.map((c,i) => {
+    const amt = _costAmt(c), note = _costNote(c);
+    return `<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.08);border-radius:5px;padding:4px 10px;">
+      <span style="font-size:13px;color:#fff;">${note ? '<span style="color:rgba(255,220,100,0.9);margin-right:6px;">' + note + '</span>' : ''}฿${amt.toLocaleString()}</span>
       <button onclick="removeCost(${i})" style="background:none;border:none;color:#ff8a8a;font-size:16px;cursor:pointer;padding:0 4px;line-height:1;">×</button>
-    </div>
-  `).join('') + `
+    </div>`;
+  }).join('') + `
     <div style="display:flex;justify-content:space-between;border-top:1px solid rgba(107,203,119,0.3);padding-top:5px;margin-top:2px;">
       <span style="font-size:13px;color:rgba(107,203,119,0.9);font-weight:600;">合计费用</span>
       <span style="font-size:14px;color:#ffd700;font-weight:700;">฿${state.cost.toLocaleString()}</span>
@@ -1982,11 +1996,14 @@ function renderCostList() {
 
 function addCostResult() {
   const inp = document.getElementById('costInput');
+  const noteInp = document.getElementById('costNoteInput');
   const v = parseFloat(inp.value);
   if (!v || v <= 0) { inp.value = ''; return; }
-  state.costItems.push(v);
-  state.cost = state.costItems.reduce((s,x) => s + x, 0);
+  const note = noteInp ? noteInp.value.trim() : '';
+  state.costItems.push({ amount: v, note });
+  state.cost = state.costItems.reduce((s,x) => s + _costAmt(x), 0);
   inp.value = '';
+  if (noteInp) noteInp.value = '';
   renderCostListResult();
   recalcFund();
   updateSavedCost();
@@ -1994,7 +2011,7 @@ function addCostResult() {
 
 function removeCostResult(idx) {
   state.costItems.splice(idx, 1);
-  state.cost = state.costItems.reduce((s,x) => s + x, 0);
+  state.cost = state.costItems.reduce((s,x) => s + _costAmt(x), 0);
   renderCostListResult();
   recalcFund();
   updateSavedCost();
@@ -2004,12 +2021,13 @@ function renderCostListResult() {
   const list = document.getElementById('costListResult');
   if (!list) return;
   if (state.costItems.length === 0) { list.innerHTML = ''; return; }
-  list.innerHTML = state.costItems.map((c,i) => `
-    <div style="display:flex;justify-content:space-between;align-items:center;background:#f0e6c8;border-radius:5px;padding:4px 10px;">
-      <span style="font-size:13px;color:#6b3a1f;">฿${c.toLocaleString()}</span>
+  list.innerHTML = state.costItems.map((c,i) => {
+    const amt = _costAmt(c), note = _costNote(c);
+    return `<div style="display:flex;justify-content:space-between;align-items:center;background:#f0e6c8;border-radius:5px;padding:4px 10px;">
+      <span style="font-size:13px;color:#6b3a1f;">${note ? '<span style="color:#8b4513;margin-right:6px;font-weight:600;">' + note + '</span>' : ''}฿${amt.toLocaleString()}</span>
       <button onclick="removeCostResult(${i})" style="background:none;border:none;color:#c0392b;font-size:16px;cursor:pointer;padding:0 4px;line-height:1;">×</button>
-    </div>
-  `).join('') + `
+    </div>`;
+  }).join('') + `
     <div style="display:flex;justify-content:space-between;border-top:1px solid #c9a84c;padding-top:5px;margin-top:2px;">
       <span style="font-size:13px;color:#6b3a1f;font-weight:600;">合计费用</span>
       <span style="font-size:14px;color:#c0392b;font-weight:700;">฿${state.cost.toLocaleString()}</span>
@@ -2500,9 +2518,13 @@ function showGameDetail(idx) {
             <span>费用支出</span><span style="font-weight:700;color:#c0392b;">-฿${cost.toLocaleString()}</span>
           </div>`;
         }
-        return items.map((c, i) => `<div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-          <span style="color:#888;">第${i+1}笔费用</span><span style="font-weight:700;color:#c0392b;">-฿${c.toLocaleString()}</span>
-        </div>`).join('') +
+        return items.map((c, i) => {
+          const amt = typeof c === 'number' ? c : (c.amount || 0);
+          const note = typeof c === 'number' ? '' : (c.note || '');
+          return `<div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span style="color:#888;">${note || ('第' + (i+1) + '笔费用')}</span><span style="font-weight:700;color:#c0392b;">-฿${amt.toLocaleString()}</span>
+          </div>`;
+        }).join('') +
         `<div style="display:flex;justify-content:space-between;margin-bottom:6px;border-top:1px dashed #f5c5c5;padding-top:4px;">
           <span style="font-weight:700;">费用合计</span><span style="font-weight:700;color:#c0392b;">-฿${cost.toLocaleString()}</span>
         </div>`;
