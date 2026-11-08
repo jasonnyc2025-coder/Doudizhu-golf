@@ -279,10 +279,14 @@
     font-size: 15px;
   }
   .current-hole td {
-    background: #fff3cc !important;
-    font-weight: 600;
+    background: #ffe680 !important;
+    font-weight: 700;
   }
-  .current-hole .hole-num { color: var(--red); }
+  .current-hole .hole-num {
+    color: var(--red);
+    font-size: 18px;
+    font-weight: 900;
+  }
 
   .role-landlord {
     background: linear-gradient(135deg, #ffeaa0, #ffd700) !important;
@@ -328,9 +332,13 @@
   }
   .hole-title {
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 26px;
+    font-size: 30px;
     color: var(--red);
     letter-spacing: 2px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    gap: 2px;
   }
   .change-hole-btn {
     background: rgba(201,168,76,0.15);
@@ -890,7 +898,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v97</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v98</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -1815,7 +1823,7 @@ function renderHolePanel() {
   if (editing) {
     titleEl.innerHTML = `✏️ 修改第 ${h+1} 洞 <button onclick="cancelEdit()" style="font-size:12px;padding:3px 10px;margin-left:8px;background:#999;color:#fff;border:none;border-radius:6px;font-family:'Noto Sans SC',sans-serif;cursor:pointer;vertical-align:middle;">取消</button><button onclick="clearHoleFrom(${h})" style="font-size:12px;padding:3px 10px;margin-left:6px;background:#c0392b;color:#fff;border:none;border-radius:6px;font-family:'Noto Sans SC',sans-serif;cursor:pointer;vertical-align:middle;">🗑 清除此洞及之后</button>`;
   } else {
-    titleEl.textContent = `第 ${h+1} 洞`;
+    titleEl.innerHTML = `第 <span style="font-size:52px;line-height:0.9;vertical-align:middle;">${h+1}</span> 洞`;
   }
   document.getElementById('landlordBadge').innerHTML = `👑 地主: <b>${state.players[land]}</b>`;
 
