@@ -874,7 +874,7 @@
     <div>
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
-      <div style="font-size:14px;color:rgba(255,215,0,0.85);margin-top:4px;font-weight:700;letter-spacing:1px;">v77</div>
+      <button onclick="forceUpdate()" style="margin-top:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v78</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
       <button class="history-btn" onclick="showHistory()">📜 详细记录</button>
@@ -1337,6 +1337,19 @@ function populateStartHole() {
     sel.appendChild(opt);
   }
   sel.value = 0;
+}
+
+async function forceUpdate() {
+  if (!confirm('强制刷新将清除本地缓存并重新加载，确定吗？')) return;
+  if ('serviceWorker' in navigator) {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(regs.map(r => r.unregister()));
+  }
+  if ('caches' in window) {
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k => caches.delete(k)));
+  }
+  location.reload(true);
 }
 
 function updateFundBanner() {
