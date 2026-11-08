@@ -1,4 +1,4 @@
-const CACHE = 'ddz-golf-v76';
+const CACHE = 'ddz-golf-v77';
 const ASSETS = [
   './index.html',
   './manifest.json',
@@ -23,7 +23,24 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request).catch(() => cached))
-  );
+  const url = new URL(e.request.url);
+  const isHTML = url.pathname === '/' || url.pathname.endsWith('index.html') || url.pathname.endsWith('/');
+
+  if (isHTML) {
+    // Network-first for HTML: always fetch latest, fall back to cache if offline
+    e.respondWith(
+      fetch(e.request)
+        .then(res => {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+          return res;
+        })
+        .catch(() => caches.match(e.request))
+    );
+  } else {
+    // Cache-first for other assets (icons, manifest)
+    e.respondWith(
+      caches.match(e.request).then(cached => cached || fetch(e.request).catch(() => cached))
+    );
+  }
 });
