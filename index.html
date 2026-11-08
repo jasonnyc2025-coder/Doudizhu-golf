@@ -873,7 +873,7 @@
     <div>
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
-      <button onclick="forceUpdate()" style="margin-top:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v92</button>
+      <button onclick="forceUpdate()" style="margin-top:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v93</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
       <button class="history-btn" onclick="showHistory()">📜 详细记录</button>
@@ -1225,6 +1225,8 @@ function saveGameState() {
     prevFund: state.prevFund,
     scores: state.scores,
     landlordHistory: state.landlordHistory,
+    cost: state.cost,
+    costItems: state.costItems.slice(),
   };
   localStorage.setItem('ddz_game_state', JSON.stringify(snap));
 }
@@ -1245,8 +1247,8 @@ function restoreGameState(snap) {
   if (state.fixedLandlord) headerParts.push('🔒 固定地主');
   courseDisplay.textContent = headerParts.join('  ');
   document.getElementById('holePanel').style.display = 'block';
-  const cl = document.getElementById('costList'); if (cl) cl.innerHTML = '';
-  const clr = document.getElementById('costListResult'); if (clr) clr.innerHTML = '';
+  renderCostList();
+  renderCostListResult();
   buildScoreTable();
   recomputeAll();
   refreshAllRows();
@@ -1975,6 +1977,7 @@ function addCost() {
   if (noteInp) noteInp.value = '';
   renderCostList();
   showFundPreview();
+  saveGameState();
 }
 
 function removeCost(idx) {
@@ -1982,6 +1985,7 @@ function removeCost(idx) {
   state.cost = state.costItems.reduce((s,x) => s + _costAmt(x), 0);
   renderCostList();
   showFundPreview();
+  saveGameState();
 }
 
 function renderCostList() {
