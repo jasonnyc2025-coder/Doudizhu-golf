@@ -874,7 +874,7 @@
     <div>
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
-      <button onclick="forceUpdate()" style="margin-top:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v81</button>
+      <button onclick="forceUpdate()" style="margin-top:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v82</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
       <button class="history-btn" onclick="showHistory()">📜 详细记录</button>
@@ -2275,8 +2275,8 @@ async function renderLedger() {
           ${detail ? `<div class="ledger-detail">${detail}</div>` : ''}
           ${sub ? `<div class="ledger-sub">${sub}</div>` : ''}
         </div>
-        <div style="display:flex;align-items:flex-end;gap:8px;flex-shrink:0;">
-          <div style="font-size:17px;font-weight:900;color:${netColor};white-space:nowrap;">${netStr}</div>
+        <div style="font-size:17px;font-weight:900;color:${netColor};white-space:nowrap;min-width:80px;text-align:right;">${netStr}</div>
+        <div style="display:flex;align-items:flex-end;gap:4px;flex-shrink:0;margin-left:16px;">
           <div style="text-align:right;">
             <div style="font-size:11px;color:#aaa;">余额</div>
             <div style="font-size:15px;font-weight:700;color:#444;white-space:nowrap;">฿${(r.newFund||0).toLocaleString()}</div>
