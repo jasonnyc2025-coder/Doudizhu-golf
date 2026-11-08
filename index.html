@@ -852,7 +852,6 @@
   .history-fund .new { color: #1e8449; font-weight: 700; }
 
   @media (max-width: 480px) {
-    .result-grid { grid-template-columns: 1fr; }
     .fund-grid { grid-template-columns: 1fr 1fr; }
     .header h1 { font-size: 24px; }
   }
@@ -874,7 +873,7 @@
     <div>
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
-      <button onclick="forceUpdate()" style="margin-top:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v85</button>
+      <button onclick="forceUpdate()" style="margin-top:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v86</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
       <button class="history-btn" onclick="showHistory()">📜 详细记录</button>
@@ -1063,7 +1062,8 @@
         <div id="costListResult" style="margin-top:8px;display:flex;flex-direction:column;gap:5px;"></div>
       </div>
       <div class="result-fund-box" id="resultFundBox"></div>
-      <button class="new-game-btn" onclick="newGame()">新一局 ↺</button>
+      <button onclick="finishGame()" style="width:100%;padding:16px;font-size:20px;font-weight:900;color:#fff;background:linear-gradient(135deg,#1a5c35,#27ae60);border:none;border-radius:12px;cursor:pointer;font-family:'Ma Shan Zheng',cursive;letter-spacing:3px;box-shadow:0 4px 14px rgba(39,174,96,0.4);margin-bottom:10px;">✅ 完 成 比 赛</button>
+      <button class="new-game-btn" onclick="newGame()">新一局（不保存）↺</button>
     </div>
 
     <!-- HISTORY SCREEN -->
@@ -2048,7 +2048,6 @@ async function showResult() {
   const rcd = document.getElementById('resultCourseNameDisplay');
   rcd.textContent = state.courseName ? '⛳ ' + state.courseName : '';
   renderCostListResult();
-  await saveHistory();
 
   const totals = getTotals();
   const baseScore = Math.max(...totals);  // 输得最少的人（分数最高）作为基准
@@ -2100,6 +2099,12 @@ function recalcFund() {
     </div>
     <div class="result-fund-new">฿${newFund.toLocaleString()}</div>
   `;
+}
+
+async function finishGame() {
+  await saveHistory();
+  showToast('比赛记录已保存 ✅');
+  await newGame();
 }
 
 async function newGame() {
