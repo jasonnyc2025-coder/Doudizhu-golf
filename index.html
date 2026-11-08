@@ -873,11 +873,11 @@
     <div>
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
-      <button onclick="forceUpdate()" style="margin-top:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v90</button>
+      <button onclick="forceUpdate()" style="margin-top:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v91</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
       <button class="history-btn" onclick="showHistory()">📜 详细记录</button>
-      <button class="history-btn" onclick="showDepositDialog()" style="background:rgba(39,174,96,0.25);border-color:rgba(39,174,96,0.6);">💵 存入现金</button>
+      <button class="history-btn" onclick="showDepositDialog()" style="background:rgba(39,174,96,0.25);border-color:rgba(39,174,96,0.6);">💰 存入/支出</button>
     </div>
   </div>
   <!-- 记账本 + 开始比赛 below the green banner -->
@@ -902,17 +902,24 @@
     </div>
   </div>
 
-  <!-- DEPOSIT DIALOG -->
+  <!-- DEPOSIT/EXPENSE DIALOG -->
   <div id="depositOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:999;align-items:center;justify-content:center;">
-    <div style="background:#fffdf5;border-radius:16px;padding:28px 24px;width:88%;max-width:340px;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
-      <div style="font-size:18px;font-weight:700;color:#1a5c35;margin-bottom:16px;text-align:center;">💵 存入现金到公积金</div>
+    <div style="background:#fffdf5;border-radius:16px;padding:24px 24px 28px;width:88%;max-width:340px;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+      <!-- Tab switcher -->
+      <div style="display:flex;border-radius:10px;overflow:hidden;margin-bottom:18px;border:1.5px solid #c9a84c;">
+        <button id="depositTabIn" onclick="setDepositTab('in')"
+          style="flex:1;padding:11px;border:none;font-size:15px;font-weight:700;cursor:pointer;font-family:'Noto Sans SC',sans-serif;transition:background 0.2s;">💵 存入</button>
+        <button id="depositTabOut" onclick="setDepositTab('out')"
+          style="flex:1;padding:11px;border:none;font-size:15px;font-weight:700;cursor:pointer;font-family:'Noto Sans SC',sans-serif;transition:background 0.2s;">💸 支出</button>
+      </div>
+      <div id="depositDialogTitle" style="font-size:17px;font-weight:700;margin-bottom:14px;text-align:center;"></div>
       <div style="font-size:13px;color:#888;margin-bottom:6px;">金额 (฿)</div>
-      <input id="depositAmount" type="number" min="1" placeholder="例如 1000" style="width:100%;padding:12px;border:1.5px solid #c9a84c;border-radius:8px;font-size:18px;font-family:'Noto Sans SC',sans-serif;outline:none;box-sizing:border-box;margin-bottom:12px;">
+      <input id="depositAmount" type="number" min="1" placeholder="例如 500" style="width:100%;padding:12px;border:1.5px solid #c9a84c;border-radius:8px;font-size:18px;font-family:'Noto Sans SC',sans-serif;outline:none;box-sizing:border-box;margin-bottom:12px;">
       <div style="font-size:13px;color:#888;margin-bottom:6px;">备注（可选）</div>
-      <input id="depositNote" type="text" placeholder="例如：Andy 补交" style="width:100%;padding:10px 12px;border:1.5px solid #c9a84c;border-radius:8px;font-size:15px;font-family:'Noto Sans SC',sans-serif;outline:none;box-sizing:border-box;margin-bottom:16px;">
+      <input id="depositNote" type="text" placeholder="例如：Andy 补交 / 球场费" style="width:100%;padding:10px 12px;border:1.5px solid #c9a84c;border-radius:8px;font-size:15px;font-family:'Noto Sans SC',sans-serif;outline:none;box-sizing:border-box;margin-bottom:16px;">
       <div style="display:flex;gap:10px;">
         <button onclick="hideDepositDialog()" style="flex:1;padding:12px;background:#eee;border:none;border-radius:10px;font-size:15px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">取消</button>
-        <button onclick="doDeposit()" style="flex:1;padding:12px;background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">确认存入</button>
+        <button id="depositConfirmBtn" onclick="doDeposit()" style="flex:1;padding:12px;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Noto Sans SC',sans-serif;"></button>
       </div>
     </div>
   </div>
@@ -2337,6 +2344,13 @@ async function renderLedger() {
       netStr = '+฿' + r.amount.toLocaleString();
       netColor = '#27ae60';
       if (r.note) detail = r.note;
+    } else if (r.type === 'expense') {
+      typeLabel = '💸 额外支出';
+      typeColor = '#8b0000';
+      net = -r.amount;
+      netStr = '-฿' + r.amount.toLocaleString();
+      netColor = '#c0392b';
+      if (r.note) detail = r.note;
     } else if (r.type === 'adjust') {
       typeLabel = '⚙️ 修正余额';
       typeColor = '#1a3a5c';
@@ -2380,9 +2394,29 @@ async function renderLedger() {
   }).join('');
 }
 
+let _depositTab = 'in';
+
+function setDepositTab(tab) {
+  _depositTab = tab;
+  const isIn = tab === 'in';
+  const tabIn = document.getElementById('depositTabIn');
+  const tabOut = document.getElementById('depositTabOut');
+  tabIn.style.background  = isIn ? '#27ae60' : '#f5f5f5';
+  tabIn.style.color       = isIn ? '#fff' : '#888';
+  tabOut.style.background = isIn ? '#f5f5f5' : '#c0392b';
+  tabOut.style.color      = isIn ? '#888' : '#fff';
+  const title = document.getElementById('depositDialogTitle');
+  title.textContent = isIn ? '💵 存入现金到公积金' : '💸 额外支出（非比赛）';
+  title.style.color = isIn ? '#1a5c35' : '#8b0000';
+  const btn = document.getElementById('depositConfirmBtn');
+  btn.textContent = isIn ? '确认存入' : '确认支出';
+  btn.style.background = isIn ? 'linear-gradient(135deg,#27ae60,#1e8449)' : 'linear-gradient(135deg,#c0392b,#8b0000)';
+}
+
 function showDepositDialog() {
   document.getElementById('depositAmount').value = '';
   document.getElementById('depositNote').value = '';
+  setDepositTab('in');
   document.getElementById('depositOverlay').style.display = 'flex';
   setTimeout(() => document.getElementById('depositAmount').focus(), 100);
 }
@@ -2443,15 +2477,14 @@ async function doDeposit() {
   const amount = parseFloat(document.getElementById('depositAmount').value);
   if (!amount || amount <= 0) { showToast('请输入有效金额'); return; }
   const note = document.getElementById('depositNote').value.trim();
-  // Use displayed banner value to avoid stale Firestore reads
+  const isExpense = _depositTab === 'out';
   const bannerText = (document.getElementById('fundBannerValue').textContent || '฿0').replace(/[฿,]/g, '');
   const prevFund = parseFloat(bannerText) || 0;
-  const newFund = prevFund + amount;
+  const newFund = isExpense ? prevFund - amount : prevFund + amount;
   await saveFund(newFund);
   updateFundBanner();
-  // Save deposit record to history
   const record = {
-    type: 'deposit',
+    type: isExpense ? 'expense' : 'deposit',
     date: formatDateTime(new Date()),
     timestamp: Date.now(),
     amount: amount,
@@ -2475,7 +2508,7 @@ async function doDeposit() {
   }
   hideDepositDialog();
   document.getElementById('prevFundInput').value = newFund;
-  showToast('已存入 ฿' + amount.toLocaleString() + ' ✅');
+  showToast(isExpense ? '已记录支出 ฿' + amount.toLocaleString() + ' ✅' : '已存入 ฿' + amount.toLocaleString() + ' ✅');
 }
 
 function showGameDetail(idx) {
@@ -2581,6 +2614,23 @@ async function renderHistory() {
           <div class="history-fund">
             <span>上次 ฿${r.prevFund.toLocaleString()} ＋存入 ฿${r.amount.toLocaleString()}</span>
             <span class="new">＝ ฿${r.newFund.toLocaleString()}</span>
+          </div>
+        </div>`;
+    }
+    if (r.type === 'expense') {
+      return `
+        <div class="history-card" style="border-left:4px solid #c0392b;">
+          <div class="history-card-top">
+            <div>
+              <div class="history-date">📅 ${r.date}</div>
+              <div style="font-size:15px;font-weight:700;color:#8b0000;margin-top:4px;">💸 额外支出 -฿${r.amount.toLocaleString()}</div>
+              ${r.note ? `<div style="font-size:12px;color:#888;margin-top:2px;">备注: ${r.note}</div>` : ''}
+            </div>
+            <button class="history-del" onclick="deleteHistory(${idx})">×</button>
+          </div>
+          <div class="history-fund">
+            <span>上次 ฿${r.prevFund.toLocaleString()} −支出 ฿${r.amount.toLocaleString()}</span>
+            <span class="new" style="color:#c0392b;">＝ ฿${r.newFund.toLocaleString()}</span>
           </div>
         </div>`;
     }
