@@ -873,7 +873,7 @@
     <div>
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
-      <button onclick="forceUpdate()" style="margin-top:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v87</button>
+      <button onclick="forceUpdate()" style="margin-top:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v88</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
       <button class="history-btn" onclick="showHistory()">📜 详细记录</button>
@@ -2107,7 +2107,11 @@ function recalcFund() {
 }
 
 async function finishGame() {
-  await updateSavedCost(); // final sync of expenses; record was already created in showResult()
+  if (state.savedTimestamp) {
+    await updateSavedCost(); // final sync of expenses
+  } else {
+    await saveHistory(); // first save (no expenses were added, saveHistory was skipped before)
+  }
   showToast('比赛记录已保存 ✅');
   await newGame();
 }
@@ -2212,7 +2216,12 @@ async function saveHistory() {
 
 // Called after each expense change to update the already-saved record
 async function updateSavedCost() {
-  if (!state.savedTimestamp) return;
+  if (!state.savedTimestamp) {
+    // Record wasn't created yet (e.g. all-tie game with cost=0 when showResult ran).
+    // Now that expenses exist, create it for the first time with current cost.
+    await saveHistory();
+    return; // saveHistory already computed and saved the correct newFund
+  }
   const cost = state.cost || 0;
   const totals = getTotals();
   const baseScore = Math.max(...totals);
