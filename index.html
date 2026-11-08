@@ -729,6 +729,26 @@
 
   .history-screen { display: none; padding: 20px; }
 
+  /* LEDGER */
+  .ledger-screen { display: none; padding: 20px; }
+  .ledger-row {
+    background: white;
+    border: 1.5px solid #e0d0a0;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+  .ledger-type { font-size: 18px; font-weight: 800; }
+  .ledger-date { font-size: 13px; color: #888; margin-top: 3px; }
+  .ledger-detail { font-size: 13px; color: #6b3a1f; margin-top: 2px; }
+  .ledger-sub { font-size: 12px; color: #aaa; margin-top: 3px; }
+  .ledger-amount { font-size: 24px; font-weight: 900; text-align: right; white-space: nowrap; }
+  .ledger-balance { font-size: 13px; color: #888; margin-top: 4px; text-align: right; }
+
   /* COURSE SEARCH */
   .pocket-toggle {
     padding: 9px 16px;
@@ -851,16 +871,19 @@
   </div>
 
   <div class="fund-banner" id="fundBanner">
-    <div>
-      <span class="fund-banner-label">🏦 当前公积金结余</span>
-      <div class="fund-banner-value" id="fundBannerValue">฿0</div>
-      <div style="font-size:10px;color:rgba(255,215,0,0.5);margin-top:2px;">v62</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <span class="fund-banner-label">🏦 当前公积金结余</span>
+        <div class="fund-banner-value" id="fundBannerValue">฿0</div>
+        <div style="font-size:10px;color:rgba(255,215,0,0.5);margin-top:2px;">v63</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+        <button class="history-btn" onclick="showHistory()">📜 详细记录</button>
+        <button class="history-btn" onclick="showDepositDialog()" style="background:rgba(39,174,96,0.25);border-color:rgba(39,174,96,0.6);">💵 存入现金</button>
+        <button class="history-btn" onclick="showAdjustDialog()" style="background:rgba(52,152,219,0.25);border-color:rgba(52,152,219,0.6);">⚙️ 修正余额</button>
+      </div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
-      <button class="history-btn" onclick="showHistory()">📜 历史记录</button>
-      <button class="history-btn" onclick="showDepositDialog()" style="background:rgba(39,174,96,0.25);border-color:rgba(39,174,96,0.6);">💵 存入现金</button>
-      <button class="history-btn" onclick="showAdjustDialog()" style="background:rgba(52,152,219,0.25);border-color:rgba(52,152,219,0.6);">⚙️ 修正余额</button>
-    </div>
+    <button onclick="showLedger()" style="width:100%;margin-top:10px;padding:13px 0;font-size:20px;font-weight:900;color:#1a3300;background:linear-gradient(135deg,#f1c40f,#e67e22);border:none;border-radius:12px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;letter-spacing:3px;box-shadow:0 3px 10px rgba(0,0,0,0.2);">📒 记账本</button>
   </div>
 
   <!-- ADJUST BALANCE DIALOG -->
@@ -1036,10 +1059,23 @@
     <!-- HISTORY SCREEN -->
     <div class="history-screen" id="historyScreen">
       <div class="history-header">
-        <div class="history-title">📜 历史记录</div>
+        <div class="history-title">📜 详细记录</div>
         <button class="history-back-btn" onclick="hideHistory()">← 返回</button>
       </div>
       <div id="historyList"></div>
+    </div>
+
+    <!-- LEDGER SCREEN -->
+    <div class="ledger-screen" id="ledgerScreen">
+      <div class="history-header">
+        <div class="history-title" style="font-size:28px;">📒 记账本</div>
+        <button class="history-back-btn" onclick="hideLedger()">← 返回</button>
+      </div>
+      <div id="ledgerSummary" style="background:linear-gradient(135deg,#1e5c2e,#2d7a3a);color:#fff;border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:14px;opacity:0.85;">当前余额</div>
+        <div id="ledgerCurrentFund" style="font-size:26px;font-weight:900;color:#f1c40f;">฿0</div>
+      </div>
+      <div id="ledgerList"></div>
     </div>
 
   </div>
@@ -1083,7 +1119,7 @@ let state = {
 const TOTAL_HOLES = 18;
 
 function hideAllScreens() {
-  ['setupScreen','gameScreen','resultScreen','historyScreen'].forEach(id => {
+  ['setupScreen','gameScreen','resultScreen','historyScreen','ledgerScreen'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -2128,6 +2164,7 @@ function showHistory() {
   document.getElementById('setupScreen').style.display = 'none';
   document.getElementById('gameScreen').style.display = 'none';
   document.getElementById('resultScreen').style.display = 'none';
+  document.getElementById('ledgerScreen').style.display = 'none';
   document.getElementById('historyScreen').style.display = 'block';
   renderHistory();
 }
@@ -2135,6 +2172,80 @@ function showHistory() {
 function hideHistory() {
   document.getElementById('historyScreen').style.display = 'none';
   document.getElementById('setupScreen').style.display = 'block';
+}
+
+function showLedger() {
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('gameScreen').style.display = 'none';
+  document.getElementById('resultScreen').style.display = 'none';
+  document.getElementById('historyScreen').style.display = 'none';
+  document.getElementById('ledgerScreen').style.display = 'block';
+  renderLedger();
+}
+
+function hideLedger() {
+  document.getElementById('ledgerScreen').style.display = 'none';
+  document.getElementById('setupScreen').style.display = 'block';
+}
+
+async function renderLedger() {
+  const list = document.getElementById('ledgerList');
+  list.innerHTML = '<div style="text-align:center;padding:30px;color:#888;font-size:15px;">加载中...</div>';
+  const hist = await getHistory();
+  // Update summary
+  const bannerText = (document.getElementById('fundBannerValue').textContent || '฿0');
+  document.getElementById('ledgerCurrentFund').textContent = bannerText;
+
+  if (hist.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:#888;font-size:15px;">暂无记录</div>';
+    return;
+  }
+
+  list.innerHTML = hist.map((r) => {
+    let typeLabel, typeColor, net, netStr, netColor, detail = '', sub = '';
+
+    if (r.type === 'deposit') {
+      typeLabel = '💵 存入现金';
+      typeColor = '#1a5c35';
+      net = r.amount;
+      netStr = '+฿' + r.amount.toLocaleString();
+      netColor = '#27ae60';
+      if (r.note) detail = r.note;
+    } else if (r.type === 'adjust') {
+      typeLabel = '⚙️ 修正余额';
+      typeColor = '#1a3a5c';
+      net = r.newFund - r.prevFund;
+      netStr = (net >= 0 ? '+' : '-') + '฿' + Math.abs(net).toLocaleString();
+      netColor = net >= 0 ? '#27ae60' : '#c0392b';
+      if (r.note) detail = r.note;
+    } else {
+      typeLabel = '🎮 比赛';
+      typeColor = '#6b1a1a';
+      const contrib = r.contribution || 0;
+      const cost = r.cost || 0;
+      net = contrib - cost;
+      if (net > 0) { netStr = '+฿' + net.toLocaleString(); netColor = '#27ae60'; }
+      else if (net < 0) { netStr = '-฿' + Math.abs(net).toLocaleString(); netColor = '#c0392b'; }
+      else { netStr = '฿0'; netColor = '#888'; }
+      if (r.courseName) detail = '⛳ ' + r.courseName;
+      if (contrib > 0 || cost > 0) sub = '贡献 +฿' + contrib.toLocaleString() + '  费用 -฿' + cost.toLocaleString();
+    }
+
+    const borderColor = net > 0 ? '#27ae60' : net < 0 ? '#e74c3c' : '#c9a84c';
+    return `
+      <div class="ledger-row" style="border-left:5px solid ${borderColor};">
+        <div style="flex:1;min-width:0;">
+          <div class="ledger-type" style="color:${typeColor}">${typeLabel}</div>
+          <div class="ledger-date">${r.date}</div>
+          ${detail ? `<div class="ledger-detail">${detail}</div>` : ''}
+          ${sub ? `<div class="ledger-sub">${sub}</div>` : ''}
+        </div>
+        <div>
+          <div class="ledger-amount" style="color:${netColor}">${netStr}</div>
+          <div class="ledger-balance">余额 ฿${(r.newFund||0).toLocaleString()}</div>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 function showDepositDialog() {
