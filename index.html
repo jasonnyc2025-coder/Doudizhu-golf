@@ -873,7 +873,7 @@
     <div>
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
-      <button onclick="forceUpdate()" style="margin-top:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v88</button>
+      <button onclick="forceUpdate()" style="margin-top:6px;padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v89</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
       <button class="history-btn" onclick="showHistory()">📜 详细记录</button>
@@ -1082,7 +1082,10 @@
         <button class="history-back-btn" onclick="hideLedger()">← 返回</button>
       </div>
       <div id="ledgerSummary" style="background:linear-gradient(135deg,#1e5c2e,#2d7a3a);color:#fff;border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
-        <div style="font-size:14px;opacity:0.85;">当前余额</div>
+        <div>
+          <div style="font-size:14px;opacity:0.85;">当前余额</div>
+          <button onclick="syncFundToHistory()" style="margin-top:4px;padding:3px 10px;font-size:11px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔧 余额修正</button>
+        </div>
         <div id="ledgerCurrentFund" style="font-size:26px;font-weight:900;color:#f1c40f;">฿0</div>
       </div>
       <div id="ledgerList"></div>
@@ -2165,14 +2168,35 @@ function hideCancelConfirm() {
 async function getHistory() {
   try {
     if (window.db) {
-      const { collection, getDocs, orderBy, query } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+      const { collection, getDocs, getDocsFromServer, orderBy, query } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
       const q = query(collection(db, 'history'), orderBy('timestamp', 'desc'));
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map(d => ({ _id: d.id, ...d.data() }));
+      try {
+        // Force fresh data from server, bypass local cache
+        const snapshot = await getDocsFromServer(q);
+        return snapshot.docs.map(d => ({ _id: d.id, ...d.data() }));
+      } catch(e) {
+        // Offline fallback
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(d => ({ _id: d.id, ...d.data() }));
+      }
     }
   } catch(e) {}
   try { return JSON.parse(localStorage.getItem('ddz_history') || '[]'); }
   catch (e) { return []; }
+}
+
+// Sync fund balance to match the most recent history record
+async function syncFundToHistory() {
+  const hist = await getHistory();
+  if (!hist.length) return;
+  const latestFund = hist[0].newFund;
+  if (latestFund === undefined || latestFund === null) return;
+  if (confirm(`将余额修正为 ฿${latestFund.toLocaleString()}（以最新历史记录为准）？`)) {
+    await saveFund(latestFund);
+    updateFundBanner();
+    renderLedger();
+    showToast('余额已修正 ✅');
+  }
 }
 
 async function saveHistory() {
