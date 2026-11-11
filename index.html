@@ -898,7 +898,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v99</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v100</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -1707,7 +1707,7 @@ function buildScoreTable() {
   // header: 洞 | 地主 | 玩家... | 总分
   let th = `<tr><th>洞</th><th>地主</th>`;
   state.players.forEach(p => th += `<th><b>${p}</b></th>`);
-  th += `<th style="background:linear-gradient(180deg,#5a3000,#8b4500);color:#ffd700;border-left:2px solid #c9a84c;">总分</th></tr>`;
+  th += `<th style="background:linear-gradient(180deg,#5a3000,#8b4500);color:#ffd700;border-left:2px solid #c9a84c;">输分</th></tr>`;
   head.innerHTML = th;
 
   // rows - 显示起始洞标记
@@ -1769,7 +1769,9 @@ function updateTableRow(hole) {
   const running = state.players.map((_,pi) =>
     state.scores.slice(0, hole + 1).reduce((s, row) => s + (row ? row[pi] : 0), 0)
   );
-  const rowTotal = running.reduce((s,v) => s + v, 0);
+  // 本洞所有人输分之和（负值绝对值之和）
+  const holeRow = state.scores[hole] || [];
+  const rowTotal = holeRow.reduce((s,v) => s + (v < 0 ? -v : 0), 0);
 
   state.players.forEach((_,pi) => {
     const cell = document.getElementById(`sc_${hole}_${pi}`);
@@ -1784,13 +1786,15 @@ function updateTableRow(hole) {
   // row running total cell
   const rtCell = document.getElementById(`rt_${hole}`);
   if (rtCell) {
-    rtCell.textContent = rowTotal;
-    rtCell.style.color = rowTotal < 0 ? '#e74c3c' : '#999';
+    rtCell.textContent = rowTotal || '—';
+    rtCell.style.color = rowTotal > 0 ? '#e74c3c' : '#999';
   }
 
   // update footer totals
   const totals = getTotals();
-  const grandTotal = totals.reduce((s,v) => s + v, 0);
+  // 累计所有洞的总输分
+  const grandTotal = state.scores.filter(Boolean).reduce((s, row) =>
+    s + row.reduce((rs,v) => rs + (v < 0 ? -v : 0), 0), 0);
   state.players.forEach((_,pi) => {
     const fc = document.getElementById(`ft_${pi}`);
     if (fc) {
