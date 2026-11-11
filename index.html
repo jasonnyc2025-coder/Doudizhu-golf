@@ -898,7 +898,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v100</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v101</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -1707,7 +1707,7 @@ function buildScoreTable() {
   // header: 洞 | 地主 | 玩家... | 总分
   let th = `<tr><th>洞</th><th>地主</th>`;
   state.players.forEach(p => th += `<th><b>${p}</b></th>`);
-  th += `<th style="background:linear-gradient(180deg,#5a3000,#8b4500);color:#ffd700;border-left:2px solid #c9a84c;">输分</th></tr>`;
+  th += `<th style="background:linear-gradient(180deg,#5a3000,#8b4500);color:#ffd700;border-left:2px solid #c9a84c;">总分</th></tr>`;
   head.innerHTML = th;
 
   // rows - 显示起始洞标记
@@ -1769,9 +1769,8 @@ function updateTableRow(hole) {
   const running = state.players.map((_,pi) =>
     state.scores.slice(0, hole + 1).reduce((s, row) => s + (row ? row[pi] : 0), 0)
   );
-  // 本洞所有人输分之和（负值绝对值之和）
-  const holeRow = state.scores[hole] || [];
-  const rowTotal = holeRow.reduce((s,v) => s + (v < 0 ? -v : 0), 0);
+  // 截至本洞累计进锅的分数 = 输分总和 − 地主入口袋的分
+  const rowTotal = -running.reduce((s,v) => s + v, 0);
 
   state.players.forEach((_,pi) => {
     const cell = document.getElementById(`sc_${hole}_${pi}`);
@@ -1786,15 +1785,13 @@ function updateTableRow(hole) {
   // row running total cell
   const rtCell = document.getElementById(`rt_${hole}`);
   if (rtCell) {
-    rtCell.textContent = rowTotal || '—';
+    rtCell.textContent = rowTotal;
     rtCell.style.color = rowTotal > 0 ? '#e74c3c' : '#999';
   }
 
   // update footer totals
   const totals = getTotals();
-  // 累计所有洞的总输分
-  const grandTotal = state.scores.filter(Boolean).reduce((s, row) =>
-    s + row.reduce((rs,v) => rs + (v < 0 ? -v : 0), 0), 0);
+  const grandTotal = -totals.reduce((s,v) => s + v, 0);
   state.players.forEach((_,pi) => {
     const fc = document.getElementById(`ft_${pi}`);
     if (fc) {
@@ -2052,13 +2049,12 @@ function recomputeAll() {
     const mult = r.mult || 1; // 兼容老数据
     const delta = new Array(n).fill(0);
     if (type === 'landlord') {
-      // 地主赢：每个农民输 mult 分，地主（入口袋模式）赢 mult×(n-1) 分
+      // 地主赢：每个农民输 mult 分；入口袋模式下地主只赢 mult 分，其余进总分（锅）
       state.players.forEach((_,i) => { if (i !== land) delta[i] = -mult; });
-      if (state.pocketMode) delta[land] = mult * (n - 1);
+      if (state.pocketMode) delta[land] = mult;
     } else if (type === 'farmer') {
-      // 农民赢：地主输给每个农民 mult 分，共输 mult×(n-1) 分
-      delta[land] = -mult * (n - 1);
-      if (state.pocketMode) state.players.forEach((_,i) => { if (i !== land) delta[i] = mult; });
+      // 农民赢：地主只输 mult 分，进总分（锅）
+      delta[land] = -mult;
     }
     state.scores[h] = delta;
     state.landlordHistory[h] = land;
