@@ -223,9 +223,10 @@
     color: #ffd700;
     border: 2px solid #8b0000;
     border-radius: 8px;
-    font-size: 18px;
+    font-size: 30px;
     font-family: 'Ma Shan Zheng', cursive;
-    letter-spacing: 4px;
+    letter-spacing: 6px;
+    text-shadow: 0 2px 3px rgba(0,0,0,0.45);
     cursor: pointer;
     transition: all 0.2s;
     box-shadow: 0 4px 12px rgba(192,57,43,0.4);
@@ -783,7 +784,7 @@
     display: flex; gap: 8px; align-items: center;
   }
   .course-input {
-    flex: 1; padding: 10px 12px;
+    flex: 1; min-width: 0; padding: 10px 12px;
     border: 1.5px solid #c9a84c; border-radius: 6px;
     font-size: 15px; font-family: 'Noto Sans SC', sans-serif;
     background: white; color: var(--ink); outline: none;
@@ -901,7 +902,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v114</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v115</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -1006,13 +1007,13 @@
         <div class="setup-section" style="flex:1;min-width:0;">
           <div class="setup-label">⛳ 从第几洞开始</div>
           <div style="display:flex;gap:6px;align-items:center;">
-            <select id="startHoleSelect" style="flex:1;padding:10px 10px;border:1.5px solid #c9a84c;border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;background:white;color:var(--ink);outline:none;font-weight:600;min-width:0;"></select>
+            <select id="startHoleSelect" style="flex:1;padding:10px 10px;border:1.5px solid #c9a84c;border-radius:6px;font-size:21px;font-family:'Noto Sans SC',sans-serif;background:white;color:var(--ink);outline:none;font-weight:800;min-width:0;"></select>
           </div>
         </div>
         <div class="setup-section" style="flex:1;min-width:0;">
           <div class="setup-label">🏌️ 球场名称</div>
           <div class="course-search-row">
-            <input type="text" id="courseInput" class="course-input" placeholder="输入或搜索球场名称">
+            <input type="text" id="courseInput" class="course-input" placeholder="输入球场">
             <button class="course-search-btn" onclick="searchNearbyCourses()">📍 附近</button>
           </div>
           <div class="course-selected-name" id="courseSelectedName" style="margin-top:4px;"></div>
@@ -1560,7 +1561,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 114; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 115; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
