@@ -166,28 +166,7 @@
   }
   .player-input-row input:focus { border-color: var(--red); }
 
-  .first-landlord-select {
-    display: flex; gap: 8px; flex-wrap: wrap;
-  }
-  .landlord-btn {
-    padding: 9px 16px;
-    border-radius: 6px;
-    border: 2px solid #c9a84c;
-    background: white;
-    font-size: 13px;
-    font-family: 'Noto Sans SC', sans-serif;
-    cursor: pointer;
-    transition: all 0.2s;
-    color: #6b3a1f;
-    font-weight: 600;
-  }
-  .landlord-btn:hover { background: #fff8e7; }
-  .landlord-btn.active {
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
-    color: white;
-    border-color: #c0392b;
-  }
-
+  .first-landlord-select { display: block; }
   .fund-section {
     background: #fff8e7;
     border: 1.5px solid #c9a84c;
@@ -879,7 +858,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v117</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v118</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -1452,6 +1431,23 @@ function toggleFixedLandlord() {
   document.getElementById('landlordLabel').textContent = state.fixedLandlord ? '👑 整场地主' : '👑 第一洞地主';
 }
 
+// 下拉框选项跟随玩家姓名输入框实时更新
+function refreshLandlordOptions() {
+  const sel = document.getElementById('firstLandlordDropdown');
+  if (!sel) return;
+  const current = state.firstLandlord < state.playerCount ? state.firstLandlord : 0;
+  sel.innerHTML = '';
+  for (let i = 0; i < state.playerCount; i++) {
+    const inp = document.getElementById(`pname_${i}`);
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = (inp && inp.value.trim()) || `玩家${i+1}`;
+    sel.appendChild(opt);
+  }
+  sel.value = current;
+  state.firstLandlord = current;
+}
+
 function populateStartHole() {
   const sel = document.getElementById('startHoleSelect');
   if (!sel) return;
@@ -1465,7 +1461,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 117; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 118; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -1741,20 +1737,17 @@ function renderPlayerInputs() {
   for (let i = 0; i < state.playerCount; i++) {
     const row = document.createElement('div');
     row.className = 'player-input-row';
-    row.innerHTML = `<label>玩家${i+1}</label><input type="text" id="pname_${i}" placeholder="${defaults[i]}" value="${defaults[i]}">`;
+    row.innerHTML = `<label>玩家${i+1}</label><input type="text" id="pname_${i}" placeholder="${defaults[i]}" value="${defaults[i]}" oninput="refreshLandlordOptions()">`;
     container.appendChild(row);
-
-    const btn = document.createElement('button');
-    btn.className = 'landlord-btn' + (i===0?' active':'');
-    btn.textContent = `玩家${i+1}`;
-    btn.dataset.index = i;
-    btn.onclick = () => {
-      document.querySelectorAll('.landlord-btn').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      state.firstLandlord = i;
-    };
-    flContainer.appendChild(btn);
   }
+  // 地主用下拉框选择，选项显示玩家名字
+  const flSelect = document.createElement('select');
+  flSelect.id = 'firstLandlordDropdown';
+  flSelect.style.cssText = "width:100%;padding:10px 10px;border:1.5px solid #c9a84c;border-radius:6px;font-size:21px;font-family:'Noto Sans SC',sans-serif;background:white;color:var(--ink);outline:none;font-weight:800;min-width:0;";
+  flSelect.onchange = () => { state.firstLandlord = parseInt(flSelect.value) || 0; };
+  flContainer.appendChild(flSelect);
+  state.firstLandlord = 0;
+  refreshLandlordOptions();
   // Pocket + fixed-landlord buttons go into the separate right column
   const pocketSide = document.getElementById('pocketSide');
   pocketSide.querySelectorAll('button').forEach(b => b.remove());
