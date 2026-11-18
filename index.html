@@ -304,6 +304,9 @@
   }
   .hole-panel-header {
     display: flex;
+    flex-wrap: wrap;
+    row-gap: 8px;
+    column-gap: 6px;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 14px;
@@ -311,7 +314,8 @@
   .hole-panel-header-left {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    min-width: 0;
   }
   .hole-title {
     font-family: 'Ma Shan Zheng', cursive;
@@ -324,6 +328,8 @@
     gap: 2px;
   }
   .change-hole-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
     background: rgba(201,168,76,0.15);
     border: 1px solid #c9a84c;
     color: #6b3a1f;
@@ -847,7 +853,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v123</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v124</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -975,10 +981,7 @@
 
       <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#fdf6e3;border-bottom:1px solid #e8d5a0;">
         <div id="gameCourseNameDisplay" style="font-size:13px;font-weight:600;color:#6b3a1f;letter-spacing:0.5px;"></div>
-        <div style="display:flex;gap:8px;">
-          <button onclick="earlyFinish()" style="background:none;border:1.5px solid #e67e22;color:#e67e22;padding:6px 14px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🏁 提前结束</button>
-          <button onclick="cancelGame()" style="background:none;border:1.5px solid #c0392b;color:#c0392b;padding:6px 14px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">✕ 取消游戏</button>
-        </div>
+        <div style="height:34px;"></div>
       </div>
 
       <div class="scoreboard">
@@ -995,12 +998,16 @@
             <button class="change-hole-btn" id="changeHoleBtn" onclick="toggleHolePicker()" style="display:none;">🔀 改</button>
             <button class="change-hole-btn skip-hole-btn" id="skipHoleBtn" onclick="skipCurrentHole()" style="display:none;">⏭ 跳过</button>
           </div>
+          <button id="earlyFinishBtn" onclick="earlyFinish()" style="margin-left:auto;padding:6px 8px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans SC',sans-serif;white-space:nowrap;flex-shrink:0;background:none;border:1.5px solid #e67e22;color:#e67e22;">🏁 提前结束</button>
         </div>
         <div class="hole-picker" id="holePicker" style="display:none;">
           <div class="hole-picker-label">选下一洞（未打的）</div>
           <div class="hole-picker-grid" id="holePickerGrid"></div>
         </div>
-        <div class="winner-select-label">🏆 谁赢了这一洞？</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div class="winner-select-label" style="margin-bottom:0;">🏆 谁赢了这一洞？</div>
+          <button id="cancelGameBtn" onclick="cancelGame()" style="padding:6px 8px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans SC',sans-serif;white-space:nowrap;flex-shrink:0;background:none;border:1.5px solid #c0392b;color:#c0392b;">✕ 取消游戏</button>
+        </div>
         <div class="winner-btns" id="winnerBtns"></div>
         <div class="winner-select-label" id="multSelectLabel" style="display:none;">🎯 倍率</div>
         <div class="mult-btns" id="multBtns" style="display:none;"></div>
@@ -1454,7 +1461,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 123; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 124; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -1979,6 +1986,9 @@ function renderHolePanel() {
   const canChange = !editing && state.step < TOTAL_HOLES && unplayedCount > 1;
   changeBtn.style.display = canChange ? 'inline-block' : 'none';
   skipBtn.style.display = canChange ? 'inline-block' : 'none';
+  // 修改某一洞时标题行放不下，先收起这两个按钮
+  document.getElementById('earlyFinishBtn').style.display = editing ? 'none' : '';
+  document.getElementById('cancelGameBtn').style.display = editing ? 'none' : '';
 
   const wbtns = document.getElementById('winnerBtns');
   wbtns.innerHTML = '';
