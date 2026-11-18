@@ -853,7 +853,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v124</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v125</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -998,16 +998,19 @@
             <button class="change-hole-btn" id="changeHoleBtn" onclick="toggleHolePicker()" style="display:none;">🔀 改</button>
             <button class="change-hole-btn skip-hole-btn" id="skipHoleBtn" onclick="skipCurrentHole()" style="display:none;">⏭ 跳过</button>
           </div>
-          <button id="earlyFinishBtn" onclick="earlyFinish()" style="margin-left:auto;padding:6px 8px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans SC',sans-serif;white-space:nowrap;flex-shrink:0;background:none;border:1.5px solid #e67e22;color:#e67e22;">🏁 提前结束</button>
+          <div id="gameMenuWrap" style="position:relative;margin-left:auto;flex-shrink:0;">
+            <button id="gameMenuBtn" onclick="toggleGameMenu(event)" style="padding:6px 9px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans SC',sans-serif;white-space:nowrap;background:rgba(107,58,31,0.06);border:1.5px solid #b08a5a;color:#6b3a1f;">☰ 结束</button>
+            <div id="gameMenu" style="display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:50;min-width:170px;background:#fffdf5;border:1.5px solid #c9a84c;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.28);overflow:hidden;">
+              <button onclick="closeGameMenu();earlyFinish()" style="display:block;width:100%;text-align:left;padding:14px 16px;background:none;border:none;border-bottom:1px solid #eadfc0;font-size:16px;font-weight:700;color:#e67e22;cursor:pointer;font-family:'Noto Sans SC',sans-serif;white-space:nowrap;">🏁 提前结束并结算</button>
+              <button onclick="closeGameMenu();cancelGame()" style="display:block;width:100%;text-align:left;padding:14px 16px;background:none;border:none;font-size:16px;font-weight:700;color:#c0392b;cursor:pointer;font-family:'Noto Sans SC',sans-serif;white-space:nowrap;">✕ 取消游戏（不保存）</button>
+            </div>
+          </div>
         </div>
         <div class="hole-picker" id="holePicker" style="display:none;">
           <div class="hole-picker-label">选下一洞（未打的）</div>
           <div class="hole-picker-grid" id="holePickerGrid"></div>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-          <div class="winner-select-label" style="margin-bottom:0;">🏆 谁赢了这一洞？</div>
-          <button id="cancelGameBtn" onclick="cancelGame()" style="padding:6px 8px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans SC',sans-serif;white-space:nowrap;flex-shrink:0;background:none;border:1.5px solid #c0392b;color:#c0392b;">✕ 取消游戏</button>
-        </div>
+        <div class="winner-select-label">🏆 谁赢了这一洞？</div>
         <div class="winner-btns" id="winnerBtns"></div>
         <div class="winner-select-label" id="multSelectLabel" style="display:none;">🎯 倍率</div>
         <div class="mult-btns" id="multBtns" style="display:none;"></div>
@@ -1461,7 +1464,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 124; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 125; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -1987,8 +1990,8 @@ function renderHolePanel() {
   changeBtn.style.display = canChange ? 'inline-block' : 'none';
   skipBtn.style.display = canChange ? 'inline-block' : 'none';
   // 修改某一洞时标题行放不下，先收起这两个按钮
-  document.getElementById('earlyFinishBtn').style.display = editing ? 'none' : '';
-  document.getElementById('cancelGameBtn').style.display = editing ? 'none' : '';
+  document.getElementById('gameMenuWrap').style.display = editing ? 'none' : '';
+  closeGameMenu();
 
   const wbtns = document.getElementById('winnerBtns');
   wbtns.innerHTML = '';
@@ -2520,6 +2523,21 @@ async function newGame() {
   document.getElementById('mainCard').style.display = 'none';
   checkForUpdate();
 }
+
+// "结束"菜单：提前结束 / 取消游戏 收在一个按钮里，点开再选
+function toggleGameMenu(ev) {
+  if (ev) ev.stopPropagation();
+  const m = document.getElementById('gameMenu');
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+function closeGameMenu() {
+  const m = document.getElementById('gameMenu');
+  if (m) m.style.display = 'none';
+}
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('gameMenuWrap');
+  if (wrap && !wrap.contains(e.target)) closeGameMenu();
+});
 
 function cancelGame() {
   showCancelConfirm();
