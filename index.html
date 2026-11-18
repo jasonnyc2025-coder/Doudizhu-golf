@@ -858,7 +858,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v121</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v122</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -1418,6 +1418,7 @@ function restoreGameState(snap) {
   updateCurrentHoleHighlight();
   renderHolePanel();
   renderTotals();
+  centerHolePanel();
   showToast('已恢复上次比赛进度 ✅');
 }
 
@@ -1465,7 +1466,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 121; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 122; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -1824,6 +1825,7 @@ function startGame() {
   updateCurrentHoleHighlight();
   renderHolePanel();
   renderTotals();
+  centerHolePanel();
 }
 
 // ── SCORE TABLE ────────────────────────────────────────────────────────
@@ -2156,6 +2158,7 @@ function confirmHole() {
       showResult();
     } else {
       renderHolePanel();
+      centerHolePanel();
     }
     showToast('第 ' + (h+1) + ' 洞已修改');
     return;
@@ -2179,6 +2182,7 @@ function confirmHole() {
   }
 
   renderTotals();
+  centerHolePanel();
 
   if (state.step >= TOTAL_HOLES) {
     clearGameState();
@@ -2257,6 +2261,7 @@ function editHole(h) {
 function cancelEdit() {
   state.editingHole = null;
   renderHolePanel();
+  centerHolePanel();
 }
 
 // 清除从第 h 洞起（按 playOrder 顺序）所有已记录的结果，回退到该洞重新记分
@@ -2277,13 +2282,20 @@ function clearHoleFrom(h) {
   renderHolePanel();
   renderTotals();
   saveGameState();
+  centerHolePanel();
   showToast(`已清除第 ${h+1} 洞及之后的记录，请重新记分`);
 }
 
-function scrollToCurrentHole() {
-  const row = document.getElementById(`row_${state.currentHole}`);
-  if (row) row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+// 把记分区域固定在屏幕中间：记分表每多一行，页面就跟着滚动同样的距离
+function centerHolePanel() {
+  const panel = document.getElementById('holePanel');
+  if (!panel || panel.style.display === 'none') return;
+  if (document.getElementById('gameScreen').style.display !== 'block') return;
+  const r = panel.getBoundingClientRect();
+  const target = window.scrollY + r.top + r.height / 2 - window.innerHeight / 2;
+  window.scrollTo(0, Math.max(0, target));
 }
+function scrollToCurrentHole() { centerHolePanel(); }
 
 // ── TOTALS ─────────────────────────────────────────────────────────────
 function getTotals() {
