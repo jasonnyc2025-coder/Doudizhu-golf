@@ -898,7 +898,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v101</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v102</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -1561,8 +1561,48 @@ function updateFundBanner() {
   if (el) el.textContent = '฿' + f.toLocaleString();
 }
 
+function r2(x) { return Math.round((parseFloat(x) || 0) * 100) / 100; }
+
+// 所有会改动公积金/记录的操作排队执行，避免连点造成重复加减
+let _fundQueue = Promise.resolve();
+function fundSerial(fn) {
+  const run = _fundQueue.then(fn, fn);
+  _fundQueue = run.catch(() => {});
+  return run;
+}
+
+function gameNumbers() {
+  const totals = getTotals();
+  const baseScore = Math.max(...totals);
+  const adjusted = totals.map(t => Math.abs(t - baseScore));
+  const contribution = adjusted.reduce((s,t) => s + t, 0) * 100;
+  const cost = r2(state.cost || 0);
+  return { totals, adjusted, contribution, cost, net: r2(contribution - cost) };
+}
+
+async function patchHistoryRecord(rec, patch) {
+  if (rec._id && window.db) {
+    const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    await updateDoc(doc(db, 'history', rec._id), patch);
+    return;
+  }
+  const hist = JSON.parse(localStorage.getItem('ddz_history') || '[]');
+  const i = hist.findIndex(r => r.timestamp === rec.timestamp);
+  if (i >= 0) { Object.assign(hist[i], patch); localStorage.setItem('ddz_history', JSON.stringify(hist)); }
+}
+
+// 某条记录的金额变了 delta：它之后的所有记录的"上次/结余"同步平移，保证账目首尾相接
+async function shiftLaterRecords(hist, timestamp, delta) {
+  if (!delta) return;
+  for (const r of hist) {
+    if (r.timestamp > timestamp) {
+      await patchHistoryRecord(r, { prevFund: r2((r.prevFund || 0) + delta), newFund: r2((r.newFund || 0) + delta) });
+    }
+  }
+}
+
 async function saveFund(value) {
-  const v = parseFloat(value) || 0;
+  const v = r2(value);
   localStorage.setItem('ddz_fund', v.toString());
   try {
     if (window.db) {
@@ -2207,7 +2247,7 @@ function addCostResult() {
   if (noteInp) noteInp.value = '';
   renderCostListResult();
   recalcFund();
-  updateSavedCost();
+  updateSavedCost().then(recalcFund);
 }
 
 function removeCostResult(idx) {
@@ -2215,7 +2255,7 @@ function removeCostResult(idx) {
   state.cost = state.costItems.reduce((s,x) => s + _costAmt(x), 0);
   renderCostListResult();
   recalcFund();
-  updateSavedCost();
+  updateSavedCost().then(recalcFund);
 }
 
 function renderCostListResult() {
@@ -2274,7 +2314,8 @@ async function showResult() {
   const rcd = document.getElementById('resultCourseNameDisplay');
   rcd.textContent = state.courseName ? '⛳ ' + state.courseName : '';
   renderCostListResult();
-  await saveHistory(); // auto-save immediately; expenses update it via updateSavedCost()
+  // 首次结算建记录；已有记录（例如结算后又改了某洞）则把分数和费用同步更新进去
+  await (state.savedTimestamp ? updateSavedCost() : saveHistory());
 
   const totals = getTotals();
   const baseScore = Math.max(...totals);  // 输得最少的人（分数最高）作为基准
@@ -2304,44 +2345,51 @@ async function showResult() {
 }
 
 function recalcFund() {
-  const cost = state.cost || 0;
-  const totals = getTotals();
-  const baseScore = Math.max(...totals);  // 输得最少的人作为基准归零
-  const adjusted = totals.map(t => Math.abs(t - baseScore));
-  // 公积金按对冲后分数计算
-  const totalLost = adjusted.reduce((s,t) => s + t, 0);
-  const contribution = totalLost * 100;
-  const newFund = state.prevFund + contribution - cost;
-
-  saveFund(newFund);
-  updateFundBanner();
+  const { contribution, cost } = gameNumbers();
+  const prev = r2(state.prevFund);
+  const newFund = r2(prev + contribution - cost);
 
   document.getElementById('resultFundBox').innerHTML = `
     <div class="result-fund-title">🏦 公积金结算 <span style="font-size:12px;opacity:0.75;font-family:'Noto Sans SC',sans-serif;font-weight:400;letter-spacing:0;">${formatDateTime(new Date())}</span></div>
-    <div class="result-fund-detail">上次结余：฿${state.prevFund.toLocaleString()}</div>
+    <div class="result-fund-detail">上次结余：฿${prev.toLocaleString()}</div>
     <div class="result-fund-detail">本次贡献（各人输分×฿100）：฿${contribution.toLocaleString()}</div>
     <div class="result-fund-detail">本次费用：฿${cost.toLocaleString()}</div>
     <div class="result-fund-detail" style="border-top:1px solid rgba(107,203,119,0.3);padding-top:8px;margin-top:4px;">
-      新结余 = ${state.prevFund} + ${contribution} − ${cost}
+      新结余 = ${prev} + ${contribution} − ${cost}
     </div>
     <div class="result-fund-new">฿${newFund.toLocaleString()}</div>
   `;
 }
 
+let _finishing = false;
 async function finishGame() {
-  if (state.savedTimestamp) {
-    await updateSavedCost();
-  } else {
-    await saveHistory();
+  if (_finishing) return; // 防止连点两次生成重复记录
+  _finishing = true;
+  try {
+    if (state.savedTimestamp) {
+      await updateSavedCost();
+    } else {
+      await saveHistory();
+    }
+    showToast(state.savedTimestamp ? '比赛记录已保存 ✅' : '比赛已完成（平局无记录）');
+    await newGame();
+  } finally {
+    _finishing = false;
   }
-  showToast(state.savedTimestamp ? '比赛记录已保存 ✅' : '比赛已完成（平局无记录）');
-  await newGame();
 }
 
 async function newGame() {
+  await _fundQueue; // 等排队中的保存全部完成，再清空本局
   state.savedDocId = null;
   state.savedTimestamp = null;
   localStorage.removeItem('ddz_saved_ref');
+  // 清空本局数据，之后任何迟到的保存都不会再生成记录
+  state.results = [];
+  state.scores = [];
+  state.landlordHistory = [];
+  state.step = 0;
+  state.cost = 0;
+  state.costItems = [];
   const newFund = await loadFund();
   updateFundBanner();
   document.getElementById('prevFundInput').value = newFund;
@@ -2430,16 +2478,18 @@ async function syncFundToHistory() {
   }
 }
 
-async function saveHistory() {
+function saveHistory() { return fundSerial(_saveHistory); }
+function updateSavedCost() { return fundSerial(_updateSavedCost); }
+
+async function _saveHistory() {
   if (state.savedTimestamp) return; // idempotency guard: don't create duplicates
   clearGameState();
-  const totals = getTotals();
-  if (totals.every(t => t === 0) && state.cost === 0) return;
-  const baseScore = Math.max(...totals);
-  const adjusted = totals.map(t => Math.abs(t - baseScore));
-  const cost = state.cost || 0;
-  const contribution = adjusted.reduce((s,t) => s + t, 0) * 100;
-  const newFund = state.prevFund + contribution - cost;
+  const { totals, adjusted, contribution, cost } = gameNumbers();
+  if (totals.every(t => t === 0) && cost === 0) return;
+  // 以云端当前余额为准（比赛中途可能有存入/支出），不用开局时记下的旧值
+  const prevFund = r2(await loadFund());
+  state.prevFund = prevFund;
+  const newFund = r2(prevFund + contribution - cost);
 
   const record = {
     date: formatDateTime(new Date()),
@@ -2447,7 +2497,7 @@ async function saveHistory() {
     players: state.players.slice(),
     adjusted: adjusted,
     amounts: adjusted.map(a => a * 100),
-    prevFund: state.prevFund,
+    prevFund: prevFund,
     contribution: contribution,
     cost: cost,
     costItems: state.costItems.length > 0 ? state.costItems.slice() : [],
@@ -2455,53 +2505,73 @@ async function saveHistory() {
     courseName: state.courseName || ''
   };
 
+  let docId = null, savedCloud = false;
   try {
     if (window.db) {
       const { collection, addDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
       const docRef = await addDoc(collection(db, 'history'), record);
-      state.savedDocId = docRef.id;
-      state.savedTimestamp = record.timestamp;
-      localStorage.setItem('ddz_saved_ref', JSON.stringify({ id: docRef.id, ts: record.timestamp }));
-      return;
+      docId = docRef.id;
+      savedCloud = true;
     }
   } catch(e) {}
-  const hist = JSON.parse(localStorage.getItem('ddz_history') || '[]');
-  hist.unshift(record);
-  localStorage.setItem('ddz_history', JSON.stringify(hist));
+  if (!savedCloud) {
+    const hist = JSON.parse(localStorage.getItem('ddz_history') || '[]');
+    hist.unshift(record);
+    localStorage.setItem('ddz_history', JSON.stringify(hist));
+  }
+  state.savedDocId = docId;
   state.savedTimestamp = record.timestamp;
-  localStorage.setItem('ddz_saved_ref', JSON.stringify({ id: null, ts: record.timestamp }));
+  localStorage.setItem('ddz_saved_ref', JSON.stringify({ id: docId, ts: record.timestamp }));
+  await saveFund(newFund);
+  updateFundBanner();
 }
 
 // Called after each expense change to update the already-saved record
-async function updateSavedCost() {
+async function _updateSavedCost() {
   if (!state.savedTimestamp) {
     // Record wasn't created yet (e.g. all-tie game with cost=0 when showResult ran).
-    // Now that expenses exist, create it for the first time with current cost.
-    await saveHistory();
-    return; // saveHistory already computed and saved the correct newFund
+    await _saveHistory();
+    return;
   }
-  const cost = state.cost || 0;
-  const totals = getTotals();
-  const baseScore = Math.max(...totals);
-  const adjusted = totals.map(t => Math.abs(t - baseScore));
-  const contribution = adjusted.reduce((s,t) => s + t, 0) * 100;
-  const newFund = state.prevFund + contribution - cost;
-  const patch = { cost, costItems: state.costItems.slice(), newFund };
-  try {
-    if (window.db && state.savedDocId) {
-      const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-      await updateDoc(doc(db, 'history', state.savedDocId), patch);
-      saveFund(newFund); updateFundBanner();
-      return;
-    }
-  } catch(e) {}
-  // localStorage fallback
-  try {
-    const hist = JSON.parse(localStorage.getItem('ddz_history') || '[]');
-    const idx = hist.findIndex(r => r.timestamp === state.savedTimestamp);
-    if (idx >= 0) { Object.assign(hist[idx], patch); localStorage.setItem('ddz_history', JSON.stringify(hist)); }
-  } catch(e) {}
-  saveFund(newFund); updateFundBanner();
+  const hist = await getHistory();
+  const rec = hist.find(r => r.timestamp === state.savedTimestamp);
+  if (!rec) {
+    // 记录已被删除：重新建一条
+    state.savedTimestamp = null;
+    state.savedDocId = null;
+    localStorage.removeItem('ddz_saved_ref');
+    await _saveHistory();
+    return;
+  }
+  const { adjusted, contribution, cost, net } = gameNumbers();
+  const oldNet = r2((rec.contribution || 0) - (rec.cost || 0));
+  const delta = r2(net - oldNet);
+  const recPrev = r2(rec.prevFund || 0);
+  state.prevFund = recPrev;
+  await patchHistoryRecord(rec, {
+    adjusted, amounts: adjusted.map(a => a * 100), contribution,
+    cost, costItems: state.costItems.slice(), newFund: r2(recPrev + net)
+  });
+  if (delta !== 0) {
+    await shiftLaterRecords(hist, rec.timestamp, delta);
+    await saveFund(r2((await loadFund()) + delta));
+  }
+  updateFundBanner();
+}
+
+// 记录按时间从新到旧排列；相邻两条"上一条结余"与"下一条的上次"对不上时，明确标出差额
+function withGapNotices(hist, cards) {
+  return cards.map((card, idx) => {
+    const r = hist[idx], older = hist[idx + 1];
+    if (!older || r.prevFund === undefined || older.newFund === undefined) return card;
+    const gap = r2(r.prevFund - older.newFund);
+    if (gap === 0) return card;
+    return card + `
+      <div style="margin:6px 0;padding:10px 12px;border:2px dashed #e67e22;border-radius:10px;background:#fff6e9;color:#8a4b00;font-size:13px;line-height:1.5;">
+        ⚠️ 这里有一笔<b>没有记录</b>的变动：<b>${gap > 0 ? '+' : '−'}฿${Math.abs(gap).toLocaleString()}</b><br>
+        <span style="color:#a0703a;">฿${r2(older.newFund).toLocaleString()} → ฿${r2(r.prevFund).toLocaleString()}（余额变了，但当时没有留下记录）</span>
+      </div>`;
+  }).join('');
 }
 
 function showHistory() {
@@ -2542,7 +2612,7 @@ async function renderLedger() {
   }
 
   _ledgerHistory = hist;
-  list.innerHTML = hist.map((r, idx) => {
+  list.innerHTML = withGapNotices(hist, hist.map((r, idx) => {
     let typeLabel, typeColor, net, netStr, netColor, detail = '', sub = '';
     const isGame = !r.type || r.type === 'game';
 
@@ -2600,7 +2670,7 @@ async function renderLedger() {
           ${arrow}
         </div>
       </div>`;
-  }).join('');
+  }));
 }
 
 let _depositTab = 'in';
@@ -2645,13 +2715,16 @@ function showAdjustDialog() {
 function hideAdjustDialog() {
   document.getElementById('adjustOverlay').style.display = 'none';
 }
-async function doAdjust() {
+function doAdjust() { return fundSerial(_doAdjust); }
+function doDeposit() { return fundSerial(_doDeposit); }
+
+async function _doAdjust() {
   const raw = document.getElementById('adjustAmount').value;
-  const amount = parseFloat(raw);
-  if (raw === '' || isNaN(amount) || amount < 0) { showToast('请输入有效金额'); return; }
+  const amount = r2(raw);
+  if (raw === '' || isNaN(parseFloat(raw)) || amount < 0) { showToast('请输入有效金额'); return; }
   const note = document.getElementById('adjustNote').value.trim();
-  const bannerText = (document.getElementById('fundBannerValue').textContent || '฿0').replace(/[฿,]/g, '');
-  const prevFund = parseFloat(bannerText) || 0;
+  document.getElementById('adjustAmount').value = '';
+  const prevFund = r2(await loadFund());
   const newFund = amount;
   await saveFund(newFund);
   updateFundBanner();
@@ -2679,17 +2752,18 @@ async function doAdjust() {
   }
   hideAdjustDialog();
   document.getElementById('prevFundInput').value = newFund;
+  if (!state.savedTimestamp) state.prevFund = newFund;
   showToast('余额已修正为 ฿' + amount.toLocaleString() + ' ✅');
 }
 
-async function doDeposit() {
-  const amount = parseFloat(document.getElementById('depositAmount').value);
+async function _doDeposit() {
+  const amount = r2(document.getElementById('depositAmount').value);
   if (!amount || amount <= 0) { showToast('请输入有效金额'); return; }
   const note = document.getElementById('depositNote').value.trim();
   const isExpense = _depositTab === 'out';
-  const bannerText = (document.getElementById('fundBannerValue').textContent || '฿0').replace(/[฿,]/g, '');
-  const prevFund = parseFloat(bannerText) || 0;
-  const newFund = isExpense ? prevFund - amount : prevFund + amount;
+  document.getElementById('depositAmount').value = '';
+  const prevFund = r2(await loadFund());
+  const newFund = r2(isExpense ? prevFund - amount : prevFund + amount);
   await saveFund(newFund);
   updateFundBanner();
   const record = {
@@ -2717,6 +2791,7 @@ async function doDeposit() {
   }
   hideDepositDialog();
   document.getElementById('prevFundInput').value = newFund;
+  if (!state.savedTimestamp) state.prevFund = newFund;
   showToast(isExpense ? '已记录支出 ฿' + amount.toLocaleString() + ' ✅' : '已存入 ฿' + amount.toLocaleString() + ' ✅');
 }
 
@@ -2790,7 +2865,7 @@ async function renderHistory() {
     list.innerHTML = '<div class="history-empty">还没有历史记录<br>打完一局后点「新一局」即可保存</div>';
     return;
   }
-  list.innerHTML = hist.map((r, idx) => {
+  list.innerHTML = withGapNotices(hist, hist.map((r, idx) => {
     // Deposit record
     if (r.type === 'adjust') {
       return `
@@ -2878,42 +2953,59 @@ async function renderHistory() {
           </div>
         </div>
       </div>`;
-  }).join('');
+  }));
 }
 
-async function deleteHistory(idx) {
+function deleteHistory(idx) { return fundSerial(() => _deleteHistory(idx)); }
+
+async function _deleteHistory(idx) {
   const hist = await getHistory();
   const record = hist[idx];
   if (!record) return;
 
   const isDeposit = record.type === 'deposit';
+  const isExpense = record.type === 'expense';
   const isAdjust = record.type === 'adjust';
   const label = isDeposit
     ? `存入记录：฿${record.amount.toLocaleString()}${record.note ? '\n备注：' + record.note : ''}`
+    : isExpense
+    ? `支出记录：฿${record.amount.toLocaleString()}${record.note ? '\n备注：' + record.note : ''}`
     : isAdjust
     ? `修正余额：฿${record.prevFund.toLocaleString()} → ฿${record.newFund.toLocaleString()}${record.note ? '\n备注：' + record.note : ''}`
     : `${record.date}${record.courseName ? '\n' + record.courseName : ''}`;
-  if (!confirm(`确定要删除这条记录吗？\n${label}\n\n公积金将恢复到 ฿${record.prevFund.toLocaleString()}`)) return;
-
-  // 恢复公积金到该局之前的金额
-  const restoredFund = record.prevFund;
-  await saveFund(restoredFund);
-  document.getElementById('prevFundInput').value = restoredFund;
-  updateFundBanner();
+  // 只撤销这一条记录自己的金额，不影响它之后的其他记录
+  const net = r2((record.newFund || 0) - (record.prevFund || 0));
+  const currentFund = r2(await loadFund());
+  const restoredFund = r2(currentFund - net);
+  const effect = net === 0 ? '这条记录金额为 0，公积金不变'
+    : `撤销这条记录的 ${net > 0 ? '+' : '−'}฿${Math.abs(net).toLocaleString()}\n公积金：฿${currentFund.toLocaleString()} → ฿${restoredFund.toLocaleString()}`;
+  if (!confirm(`确定要删除这条记录吗？\n${label}\n\n${effect}`)) return;
 
   if (record._id) {
     try {
       const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
       await deleteDoc(doc(db, 'history', record._id));
     } catch(e) {
-      hist.splice(idx, 1);
-      localStorage.setItem('ddz_history', JSON.stringify(hist));
+      showToast('删除失败，请检查网络后重试');
+      return;
     }
   } else {
-    hist.splice(idx, 1);
-    localStorage.setItem('ddz_history', JSON.stringify(hist));
+    const local = JSON.parse(localStorage.getItem('ddz_history') || '[]');
+    const i = local.findIndex(r => r.timestamp === record.timestamp);
+    if (i >= 0) { local.splice(i, 1); localStorage.setItem('ddz_history', JSON.stringify(local)); }
   }
-  showToast('已删除，公积金已恢复至 ฿' + restoredFund.toLocaleString());
+  await shiftLaterRecords(hist, record.timestamp, -net);
+  await saveFund(restoredFund);
+  document.getElementById('prevFundInput').value = restoredFund;
+  if (state.savedTimestamp === record.timestamp) {
+    state.savedTimestamp = null;
+    state.savedDocId = null;
+    localStorage.removeItem('ddz_saved_ref');
+  } else if (!state.savedTimestamp) {
+    state.prevFund = restoredFund;
+  }
+  updateFundBanner();
+  showToast('已删除，公积金现为 ฿' + restoredFund.toLocaleString());
   renderHistory();
 }
 
