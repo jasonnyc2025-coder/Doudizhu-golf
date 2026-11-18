@@ -898,7 +898,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v106</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v107</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -1358,6 +1358,18 @@ async function showMainApp() {
   populateStartHole();
   // Home = just the fund banner, main-card stays hidden
   document.getElementById('mainCard').style.display = 'none';
+  // 自动更新刷新后，直接回到刚才的比赛，不用再确认
+  if (sessionStorage.getItem('ddz_auto_restore') === '1') {
+    sessionStorage.removeItem('ddz_auto_restore');
+    try {
+      const snap = JSON.parse(localStorage.getItem('ddz_game_state') || 'null');
+      if (snap && snap.step > 0 && snap.step < TOTAL_HOLES && Array.isArray(snap.players) && snap.players.length) {
+        document.getElementById('mainCard').style.display = 'block';
+        restoreGameState(snap);
+      }
+    } catch(e) {}
+  }
+  checkForUpdate();
 }
 
 async function goToSetup() {
@@ -1388,6 +1400,7 @@ async function goToSetup() {
 function goHome() {
   hideAllScreens();
   document.getElementById('mainCard').style.display = 'none';
+  checkForUpdate();
 }
 
 // Wait for Firebase to init then start
@@ -1543,6 +1556,48 @@ function populateStartHole() {
   }
   sel.value = 0;
 }
+
+const APP_VERSION = 107; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+
+// 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
+let _updateChecking = false;
+async function checkForUpdate() {
+  if (_updateChecking || !navigator.onLine) return;
+  // 结算页上不自动刷新（刷新会离开结算页），回到首页或比赛页后再更新
+  if (document.getElementById('resultScreen').style.display === 'block') return;
+  _updateChecking = true;
+  try {
+    const res = await fetch('sw.js?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return;
+    const m = (await res.text()).match(/ddz-golf-v(\d+)/);
+    const latest = m ? parseInt(m[1]) : 0;
+    if (latest <= APP_VERSION) return;
+    // 同一个版本两分钟内只自动尝试一次，避免部署未完成时反复刷新
+    const [tryVer, tryAt] = (sessionStorage.getItem('ddz_update_try') || '').split(':');
+    if (tryVer === String(latest) && Date.now() - Number(tryAt) < 120000) return;
+    sessionStorage.setItem('ddz_update_try', latest + ':' + Date.now());
+    await _fundQueue; // 等正在进行的记账全部写完
+    const inGame = document.getElementById('gameScreen').style.display === 'block' && state.step > 0 && state.step < TOTAL_HOLES;
+    if (inGame) { saveGameState(); sessionStorage.setItem('ddz_auto_restore', '1'); }
+    try {
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+      }
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+    } catch(e) {}
+    location.replace(location.pathname + '?v=' + latest);
+  } catch(e) {
+  } finally {
+    _updateChecking = false;
+  }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkForUpdate(); });
+window.addEventListener('pageshow', () => checkForUpdate());
+window.addEventListener('online', () => checkForUpdate());
 
 async function forceUpdate() {
   if (!confirm('强制刷新将清除本地缓存并重新加载，确定吗？')) return;
@@ -2532,6 +2587,7 @@ async function newGame() {
   document.getElementById('prevFundInput').value = newFund;
   hideAllScreens();
   document.getElementById('mainCard').style.display = 'none';
+  checkForUpdate();
 }
 
 function cancelGame() {

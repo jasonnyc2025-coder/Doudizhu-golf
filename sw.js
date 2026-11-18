@@ -1,4 +1,4 @@
-const CACHE = 'ddz-golf-v106';
+const CACHE = 'ddz-golf-v107';
 const ASSETS = [
   './index.html',
   './manifest.json',
@@ -29,7 +29,7 @@ self.addEventListener('fetch', e => {
   if (isHTML) {
     // Network-first for HTML: always fetch latest, fall back to cache if offline
     e.respondWith(
-      fetch(e.request)
+      fetch(e.request, { cache: 'no-store' })
         .then(res => {
           const clone = res.clone();
           caches.open(CACHE).then(c => c.put(e.request, clone));
