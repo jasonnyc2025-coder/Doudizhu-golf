@@ -1,4 +1,4 @@
-const CACHE = 'ddz-golf-v105';
+const CACHE = 'ddz-golf-v106';
 const ASSETS = [
   './index.html',
   './manifest.json',

@@ -898,7 +898,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v105</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;">🔄 v106</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -1929,8 +1929,7 @@ function updateTableRow(hole) {
   if (rl && land !== undefined) {
     const mult = state.results[hole] ? (state.results[hole].mult || 1) : 1;
     const multIcon = mult === 2 ? ' 🐦' : mult === 3 ? ' 🦅' : '';
-    const isTie = state.results[hole] && state.results[hole].type === 'tie';
-    rl.innerHTML = isTie ? '—' : `<span class="role-landlord">${state.players[land]}${multIcon}</span>`;
+    rl.innerHTML = `<span class="role-landlord">${state.players[land]}${multIcon}</span>`;
   }
 
   // running totals up to this hole
@@ -1949,6 +1948,9 @@ function updateTableRow(hole) {
       const winner = !res ? -1 : res.type === 'landlord' ? land : res.type === 'farmer' ? res.playerIdx : -1;
       if (pi === winner) {
         cell.innerHTML = (v === 0 ? '' : `<div>${v}</div>`) + '<div style="font-size:15px;line-height:1.1;">⭐</div>';
+      } else if (res && res.type === 'tie' && pi === land) {
+        // 平局：地主那一格显示一条与星星同色的粗横杠
+        cell.innerHTML = '<div style="width:24px;height:6px;border-radius:3px;background:#f7b500;margin:0 auto;"></div>';
       } else {
         cell.textContent = v === 0 ? '—' : v;
       }
