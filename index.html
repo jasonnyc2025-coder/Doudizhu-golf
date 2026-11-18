@@ -111,9 +111,9 @@
 
   .main-card {
     background: var(--paper);
-    border: 2px solid var(--border);
-    border-top: none;
-    border-radius: 0 0 12px 12px;
+    border: 2px solid var(--gold);
+    border-radius: 12px;
+    margin-top: 16px;
     overflow: hidden;
     box-shadow: 0 8px 30px rgba(0,0,0,0.4);
   }
@@ -858,7 +858,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v120</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v121</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -1465,7 +1465,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 120; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 121; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
