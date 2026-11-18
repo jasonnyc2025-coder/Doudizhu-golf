@@ -387,17 +387,6 @@
   }
   .hole-pick-btn:hover { background: #fff3cc; }
   .hole-pick-btn.current:hover { background: linear-gradient(135deg, #e5b420, #c9971c); }
-  .landlord-badge {
-    background: linear-gradient(135deg, #ffd700, #d4a017);
-    color: #8b0000;
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 15px;
-    font-weight: 700;
-    border: 1px solid #b8860b;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-  }
-
   .winner-select-label {
     font-size: 16px;
     font-weight: 700;
@@ -858,7 +847,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v122</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v123</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -1006,7 +995,6 @@
             <button class="change-hole-btn" id="changeHoleBtn" onclick="toggleHolePicker()" style="display:none;">🔀 改</button>
             <button class="change-hole-btn skip-hole-btn" id="skipHoleBtn" onclick="skipCurrentHole()" style="display:none;">⏭ 跳过</button>
           </div>
-          <div class="landlord-badge" id="landlordBadge">👑 地主: —</div>
         </div>
         <div class="hole-picker" id="holePicker" style="display:none;">
           <div class="hole-picker-label">选下一洞（未打的）</div>
@@ -1466,7 +1454,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 122; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 123; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -1981,7 +1969,6 @@ function renderHolePanel() {
   } else {
     titleEl.innerHTML = `第 <span style="font-size:52px;line-height:0.9;vertical-align:middle;">${h+1}</span> 洞`;
   }
-  document.getElementById('landlordBadge').innerHTML = `👑 地主: <b>${state.players[land]}</b>`;
 
   // 关闭可能打开的下一洞选择器，并按场景显示/隐藏「🔀 改」「⏭ 跳过」按钮
   document.getElementById('holePicker').style.display = 'none';
