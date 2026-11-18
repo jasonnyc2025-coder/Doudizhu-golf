@@ -858,7 +858,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v119</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v120</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -1392,6 +1392,10 @@ function clearGameState() {
 
 function restoreGameState(snap) {
   Object.assign(state, snap);
+  // 正在打的洞 = 打洞顺序里的下一个（快照里没有单独保存它）
+  if (Array.isArray(state.playOrder) && state.step < state.playOrder.length) state.currentHole = state.playOrder[state.step];
+  state.editingHole = null;
+  state.selectedWinner = null;
   try {
     const ref = JSON.parse(localStorage.getItem('ddz_saved_ref') || 'null');
     if (ref) { state.savedDocId = ref.id; state.savedTimestamp = ref.ts; }
@@ -1461,7 +1465,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 119; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 120; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -1871,10 +1875,20 @@ function updateCurrentHoleHighlight() {
     if (!tr) continue;
     const isCurrent = h === state.currentHole && state.step < TOTAL_HOLES;
     tr.classList.toggle('current-hole', isCurrent);
+    // 只显示打过的洞和正在打的洞
+    tr.style.display = (state.results[h] || isCurrent) ? '' : 'none';
     // 当前洞尚未记分时，先预填地主名字
     if (isCurrent && !state.results[h]) {
       const rl = document.getElementById(`rl_${h}`);
       if (rl) rl.innerHTML = `<span class="role-landlord" style="opacity:0.5;">${state.players[state.currentLandlord]}</span>`;
+    }
+  }
+  // 行按实际打洞顺序排列（起始洞不是第 1 洞、跳洞、改洞时也保持先打的在上）
+  const body = document.getElementById('scoreBody');
+  if (body && state.playOrder.length === TOTAL_HOLES) {
+    for (const h of state.playOrder) {
+      const tr = document.getElementById(`row_${h}`);
+      if (tr) body.appendChild(tr);
     }
   }
 }
@@ -1889,8 +1903,11 @@ function updateTableRow(hole) {
   }
 
   // running totals up to this hole
+  // 累计按打洞顺序算到本洞为止
+  const pos = state.playOrder.indexOf(hole);
+  const upTo = pos >= 0 ? state.playOrder.slice(0, pos + 1) : [hole];
   const running = state.players.map((_,pi) =>
-    state.scores.slice(0, hole + 1).reduce((s, row) => s + (row ? row[pi] : 0), 0)
+    upTo.reduce((s, h) => s + (state.scores[h] ? state.scores[h][pi] : 0), 0)
   );
   // 截至本洞累计进锅的分数 = 输分总和 − 地主入口袋的分
   const rowTotal = -running.reduce((s,v) => s + v, 0);
@@ -2225,6 +2242,7 @@ function refreshAllRows() {
       if (rt) { rt.textContent = '—'; rt.style.color = '#999'; }
     }
   }
+  updateCurrentHoleHighlight();
 }
 
 // 点击某洞进行编辑
