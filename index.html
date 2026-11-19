@@ -853,7 +853,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v125</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v126</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -1155,6 +1155,7 @@ let state = {
   costItems: [],
   selectedWinner: null,
   pocketMode: false,
+  fullPocket: false,
   fixedLandlord: false,
   savedDocId: null,
   savedTimestamp: null,
@@ -1373,6 +1374,7 @@ function saveGameState() {
     playOrder: state.playOrder,
     startHole: state.startHole,
     pocketMode: state.pocketMode,
+    fullPocket: !!state.fullPocket,
     fixedLandlord: state.fixedLandlord,
     courseName: state.courseName,
     prevFund: state.prevFund,
@@ -1405,6 +1407,7 @@ function restoreGameState(snap) {
   const headerParts = [];
   if (state.courseName) headerParts.push('⛳ ' + state.courseName);
   if (state.pocketMode) headerParts.push('💰 进入口袋');
+  if (state.fullPocket) headerParts.push('💰 全进口袋');
   if (state.fixedLandlord) headerParts.push('🔒 固定地主');
   courseDisplay.textContent = headerParts.join('  ');
   document.getElementById('holePanel').style.display = 'block';
@@ -1421,10 +1424,24 @@ function restoreGameState(snap) {
 }
 
 // ── COURSE SEARCH ──────────────────────────────────────────────────────
+// "进入口袋"和"全进口袋"是两种计分方式，只能二选一（都不选 = 普通）
 function togglePocketMode() {
   const btn = document.getElementById('pocketModeBtn');
   btn.classList.toggle('active');
   state.pocketMode = btn.classList.contains('active');
+  if (state.pocketMode) {
+    state.fullPocket = false;
+    document.getElementById('fullPocketBtn').classList.remove('active');
+  }
+}
+function toggleFullPocket() {
+  const btn = document.getElementById('fullPocketBtn');
+  btn.classList.toggle('active');
+  state.fullPocket = btn.classList.contains('active');
+  if (state.fullPocket) {
+    state.pocketMode = false;
+    document.getElementById('pocketModeBtn').classList.remove('active');
+  }
 }
 
 function toggleFixedLandlord() {
@@ -1464,7 +1481,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 125; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 126; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -1543,7 +1560,8 @@ function withTimeout(promise, ms = 10000) {
 function gameNumbers() {
   const totals = getTotals();
   const baseScore = Math.max(...totals);
-  const adjusted = totals.map(t => Math.abs(t - baseScore));
+  // 全进口袋：输赢在玩家之间结清，公积金没有贡献
+  const adjusted = state.fullPocket ? totals.map(() => 0) : totals.map(t => Math.abs(t - baseScore));
   const contribution = adjusted.reduce((s,t) => s + t, 0) * 100;
   const cost = r2(state.cost || 0);
   return { totals, adjusted, contribution, cost, net: r2(contribution - cost) };
@@ -1763,6 +1781,14 @@ function renderPlayerInputs() {
   pocketBtn.onclick = togglePocketMode;
   pocketSide.appendChild(pocketBtn);
 
+  const fullBtn = document.createElement('button');
+  fullBtn.id = 'fullPocketBtn';
+  fullBtn.className = 'pocket-toggle' + (state.fullPocket ? ' active' : '');
+  fullBtn.title = '地主赢：全部归地主；地主输：赔给每个农民；不进总分';
+  fullBtn.textContent = '全进口袋';
+  fullBtn.onclick = toggleFullPocket;
+  pocketSide.appendChild(fullBtn);
+
   const fixedBtn = document.createElement('button');
   fixedBtn.id = 'fixedLandlordBtn';
   fixedBtn.className = 'pocket-toggle' + (state.fixedLandlord ? ' active' : '');
@@ -1785,6 +1811,7 @@ function startGame() {
   state.prevFund = parseFloat(document.getElementById('prevFundInput').value) || 0;
   state.courseName = document.getElementById('courseInput').value.trim();
   state.pocketMode = document.getElementById('pocketModeBtn').classList.contains('active');
+  state.fullPocket = document.getElementById('fullPocketBtn').classList.contains('active');
   state.fixedLandlord = document.getElementById('fixedLandlordBtn').classList.contains('active');
   state.cost = 0;
   state.costItems = [];
@@ -1811,6 +1838,7 @@ function startGame() {
   let headerParts = [];
   if (state.courseName) headerParts.push('⛳ ' + state.courseName);
   if (state.pocketMode) headerParts.push('💰 进入口袋');
+  if (state.fullPocket) headerParts.push('💰 全进口袋');
   if (state.fixedLandlord) headerParts.push('🔒 固定地主');
   courseDisplay.textContent = headerParts.join('  ');
 
@@ -2054,11 +2082,17 @@ function renderMultBtns(preselectMult) {
   document.getElementById('confirmBtn').disabled = !preselectMult;
   if (state.selectedWinner) state.selectedWinner.mult = preselectMult || null;
 
-  const isPocketLandlord = state.pocketMode && state.selectedWinner && state.selectedWinner.type === 'landlord';
+  const selType = state.selectedWinner ? state.selectedWinner.type : null;
+  const nP = state.playerCount;
+  const hint = (m) => {
+    if (state.fullPocket) return selType === 'landlord' ? `地主+${m * (nP - 1)} / 农民−${m}` : `地主−${m * (nP - 1)} / 农民+${m}`;
+    if (state.pocketMode && selType === 'landlord') return `地主+${m} / 农民−${m}`;
+    return `−${m}`;
+  };
   const opts = [
-    { mult: 1, label: isPocketLandlord ? '普通 <span style="opacity:0.85;">地主+1 / 农民−1</span>' : '普通 <span style="opacity:0.85;">−1</span>', cls: 'normal-selected' },
-    { mult: 2, label: isPocketLandlord ? '🐦 小鸟 <span style="opacity:0.85;">地主+2 / 农民−2</span>' : '🐦 小鸟 <span style="opacity:0.85;">−2</span>', cls: 'birdie-selected' },
-    { mult: 3, label: isPocketLandlord ? '🦅 老鹰 <span style="opacity:0.85;">地主+3 / 农民−3</span>' : '🦅 老鹰 <span style="opacity:0.85;">−3</span>', cls: 'eagle-selected' },
+    { mult: 1, label: `普通 <span style="opacity:0.85;">${hint(1)}</span>`, cls: 'normal-selected' },
+    { mult: 2, label: `🐦 小鸟 <span style="opacity:0.85;">${hint(2)}</span>`, cls: 'birdie-selected' },
+    { mult: 3, label: `🦅 老鹰 <span style="opacity:0.85;">${hint(3)}</span>`, cls: 'eagle-selected' },
   ];
   opts.forEach(opt => {
     const b = document.createElement('button');
@@ -2205,7 +2239,18 @@ function recomputeAll() {
     const { type, playerIdx } = r;
     const mult = r.mult || 1; // 兼容老数据
     const delta = new Array(n).fill(0);
-    if (type === 'landlord') {
+    if (state.fullPocket) {
+      // 全进口袋：玩家之间直接结算，没有任何分数进总分（锅）
+      if (type === 'landlord') {
+        // 地主赢：每个农民输 mult 分，全部归地主
+        state.players.forEach((_,i) => { if (i !== land) delta[i] = -mult; });
+        delta[land] = mult * (n - 1);
+      } else if (type === 'farmer') {
+        // 地主输：赔给每个农民 mult 分
+        state.players.forEach((_,i) => { if (i !== land) delta[i] = mult; });
+        delta[land] = -mult * (n - 1);
+      }
+    } else if (type === 'landlord') {
       // 地主赢：每个农民输 mult 分；入口袋模式下地主只赢 mult 分，其余进总分（锅）
       state.players.forEach((_,i) => { if (i !== land) delta[i] = -mult; });
       if (state.pocketMode) delta[land] = mult;
@@ -2402,12 +2447,8 @@ function renderCostListResult() {
 }
 
 function showFundPreview() {
-  const totals = getTotals();
-  const baseScore = Math.max(...totals);  // 输得最少的人作为基准归零
-  const adjusted = totals.map(t => Math.abs(t - baseScore));
-  const totalLost = adjusted.reduce((s,t) => s + t, 0);
-  const contribution = totalLost * 100;
-  const newFund = state.prevFund + contribution - state.cost;
+  const { contribution } = gameNumbers();
+  const newFund = r2(state.prevFund + contribution - state.cost);
 
   document.getElementById('fundResult').style.display = 'block';
   const fpd = document.getElementById('fundPreviewDate');
@@ -2451,6 +2492,20 @@ async function showResult() {
   const grid = document.getElementById('resultGrid');
   grid.innerHTML = state.players.map((p,i) => {
     const raw = totals[i];
+    if (state.fullPocket) {
+      // 全进口袋：直接显示每人净赢/净输，玩家之间自己结清
+      const color = raw > 0 ? '#27ae60' : raw < 0 ? '#e74c3c' : '#888';
+      return `
+      <div class="result-player-card" style="${raw > 0 ? 'border-color:#27ae60;' : ''}">
+        <div class="result-player-name">${p}${raw === baseScore && raw > 0 ? ' 🏆' : ''}</div>
+        <div class="result-player-score" style="color:${color}">
+          ${raw > 0 ? '赢 ' + raw + ' 分' : raw < 0 ? '输 ' + (-raw) + ' 分' : '0 分'}
+        </div>
+        <div class="result-player-amount" style="color:${color}">
+          ${raw > 0 ? '+฿' + (raw * 100).toLocaleString() : raw < 0 ? '−฿' + (-raw * 100).toLocaleString() : '฿0'}
+        </div>
+      </div>`;
+    }
     const adj = adjusted[i];
     const amount = adj * 100;
     const isMin = raw === baseScore;
@@ -2478,7 +2533,7 @@ function recalcFund() {
   document.getElementById('resultFundBox').innerHTML = `
     <div class="result-fund-title">🏦 公积金结算 <span style="font-size:12px;opacity:0.75;font-family:'Noto Sans SC',sans-serif;font-weight:400;letter-spacing:0;">${formatDateTime(new Date())}</span></div>
     <div class="result-fund-detail">上次结余：฿${prev.toLocaleString()}</div>
-    <div class="result-fund-detail">本次贡献（各人输分×฿100）：฿${contribution.toLocaleString()}</div>
+    <div class="result-fund-detail">${state.fullPocket ? '本次贡献（全进口袋，不进公积金）' : '本次贡献（各人输分×฿100）'}：฿${contribution.toLocaleString()}</div>
     <div class="result-fund-detail">本次费用：฿${cost.toLocaleString()}</div>
     <div class="result-fund-detail" style="border-top:1px solid rgba(107,203,119,0.3);padding-top:8px;margin-top:4px;">
       新结余 = ${prev} + ${contribution} − ${cost}
@@ -2626,6 +2681,8 @@ async function _saveHistory() {
     players: state.players.slice(),
     adjusted: adjusted,
     amounts: adjusted.map(a => a * 100),
+    scores: totals.slice(),
+    mode: state.fullPocket ? 'fullPocket' : state.pocketMode ? 'pocket' : 'normal',
     prevFund: prevFund,
     contribution: contribution,
     cost: cost,
@@ -2659,7 +2716,7 @@ async function _updateSavedCost() {
   }
   const { adjusted, contribution, cost, net } = gameNumbers();
   const patch = {
-    adjusted, amounts: adjusted.map(a => a * 100), contribution,
+    adjusted, amounts: adjusted.map(a => a * 100), contribution, scores: getTotals(),
     cost, costItems: state.costItems.slice()
   };
   let hist = null;
@@ -2884,6 +2941,13 @@ async function _doDeposit() {
   showToast(isExpense ? '已记录支出 ฿' + amount.toLocaleString() + ' ✅' : '已存入 ฿' + amount.toLocaleString() + ' ✅');
 }
 
+// 全进口袋的记录：显示每人净赢/净输
+function fullPocketText(sc) {
+  if (sc > 0) return '赢' + sc + '分 +฿' + (sc * 100).toLocaleString();
+  if (sc < 0) return '输' + (-sc) + '分 −฿' + (-sc * 100).toLocaleString();
+  return '0分 ฿0';
+}
+
 function showGameDetail(idx) {
   const r = _ledgerHistory[idx];
   if (!r || (r.type && r.type !== 'game')) return;
@@ -2891,6 +2955,14 @@ function showGameDetail(idx) {
     const adj = r.adjusted ? r.adjusted[i] : 0;
     const amt = r.amounts ? r.amounts[i] : 0;
     const isWinner = adj === 0;
+    if (r.mode === 'fullPocket' && Array.isArray(r.scores)) {
+      const sc = r.scores[i] || 0;
+      const col = sc > 0 ? '#27ae60' : sc < 0 ? '#c0392b' : '#888';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:${sc >= 0 ? '#f0fdf4' : '#fff8f8'};border-radius:8px;margin-bottom:6px;border:1px solid ${sc >= 0 ? '#a3e6b5' : '#f5c5c5'};">
+      <div style="font-size:17px;font-weight:700;color:#333;">${p}</div>
+      <div style="text-align:right;"><span style="font-size:16px;color:${col};font-weight:700;">${fullPocketText(sc)}</span></div>
+    </div>`;
+    }
     return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:${isWinner ? '#f0fdf4' : '#fff8f8'};border-radius:8px;margin-bottom:6px;border:1px solid ${isWinner ? '#a3e6b5' : '#f5c5c5'};">
       <div style="font-size:17px;font-weight:700;color:#333;">${p}</div>
       <div style="text-align:right;">
@@ -3012,6 +3084,10 @@ async function renderHistory() {
       const adj = r.adjusted[i];
       const amt = r.amounts[i];
       const zero = adj === 0;
+      if (r.mode === 'fullPocket' && Array.isArray(r.scores)) {
+        const sc = r.scores[i] || 0;
+        return `<div class="history-player${sc >= 0 ? ' zero' : ''}">${p}: <b>${fullPocketText(sc)}</b></div>`;
+      }
       return `<div class="history-player${zero ? ' zero' : ''}">${p}: <b>${zero ? '0分 ฿0 🏆' : '输' + adj + '分 ฿' + amt.toLocaleString()}</b></div>`;
     }).join('');
     const net = (r.contribution || 0) - (r.cost || 0);
