@@ -857,9 +857,10 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v138</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v139</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
+      <div id="syncStatus" onclick="syncNow()" style="margin-top:6px;font-size:12px;font-weight:700;color:#7dffa5;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">☁️ 云端已同步</div>
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
       <button class="history-btn" onclick="showHistory()">📜 详细记录</button>
@@ -1442,6 +1443,7 @@ function liveNewer(a, b) {
 let _livePending = null; // 还没成功写上云端的最新一份
 function writeLiveDoc(payload) {
   _livePending = payload;
+  renderSyncStatus();
   import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js')
     .then(({ doc, runTransaction }) => runTransaction(db, async (tx) => {
       const ref = doc(db, 'config', 'liveGame');
@@ -1450,11 +1452,40 @@ function writeLiveDoc(payload) {
       if (cur.exists() && typeof cur.data().rev === 'number' && liveNewer(cur.data(), payload)) return;
       tx.set(ref, payload);
     }))
-    .then(() => { if (_livePending === payload) _livePending = null; })
+    .then(() => { if (_livePending === payload) _livePending = null; renderSyncStatus(); })
     .catch(() => {});
 }
 // 断网时没写上去的进度，联网后补写（仍然只在它比云端新时才写）
 window.addEventListener('online', () => { if (_livePending) writeLiveDoc(_livePending); });
+
+// ── 随时保持云端最新 ──────────────────────────────────────────────────
+// 本机还有没传上云端的东西吗：断网时记的账目记录，或还没写上去的比赛进度
+function pendingSyncCount() {
+  return (window.db ? localHist().length : 0) + (_livePending ? 1 : 0);
+}
+function renderSyncStatus() {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  const n = pendingSyncCount();
+  if (!window.db) { el.textContent = '📴 未连接云端（仅存本机）'; el.style.color = '#bbb'; }
+  else if (!navigator.onLine) { el.textContent = n ? `📴 离线 · ${n} 项待上传` : '📴 离线'; el.style.color = '#ffb347'; }
+  else if (n) { el.textContent = `⏳ ${n} 项正在上传…`; el.style.color = '#ffb347'; }
+  else { el.textContent = '☁️ 云端已同步'; el.style.color = '#7dffa5'; }
+}
+// 把所有没传上去的东西立刻再传一次
+function syncNow() {
+  if (!window.db) { renderSyncStatus(); return; }
+  if (_livePending) writeLiveDoc(_livePending);
+  fundSerial(reconcileLedger).then(renderSyncStatus, renderSyncStatus);
+  renderSyncStatus();
+}
+window.addEventListener('online', syncNow);
+window.addEventListener('offline', renderSyncStatus);
+// 每 10 秒检查一次：有没传上去的就重试，直到传完为止
+setInterval(() => {
+  if (window.db && navigator.onLine && pendingSyncCount()) syncNow();
+  renderSyncStatus();
+}, 10000);
 
 function pushLiveGame(snap) {
   if (!window.db || !snap.gameId) return;
@@ -1684,7 +1715,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 138; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 139; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -1812,6 +1843,7 @@ async function addHistoryRecord(record) {
   const hist = localHist();
   hist.unshift(record);
   setLocalHist(hist);
+  renderSyncStatus();
   return null;
 }
 
@@ -1912,6 +1944,7 @@ async function reconcileLedger() {
     const inp = document.getElementById('prevFundInput');
     if (inp) inp.value = result.fund;
     updateFundBanner();
+    renderSyncStatus();
     return result;
   } catch(e) {
     return null;
