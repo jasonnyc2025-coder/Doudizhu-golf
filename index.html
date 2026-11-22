@@ -857,7 +857,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v137</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v138</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -1546,7 +1546,45 @@ async function startLiveWatch() {
   try {
     const { doc, onSnapshot } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
     _liveUnsub = onSnapshot(doc(db, 'config', 'liveGame'), onLiveSnapshot, () => {});
+    // 同时监听公共设置：余额变化、别的手机已升级到新版本，都实时推送过来
+    onSnapshot(doc(db, 'config', 'settings'), onSettingsSnapshot, () => {});
   } catch(e) {}
+}
+
+let _settingsRefreshTimer = null;
+function onSettingsSnapshot(docSnap) {
+  if (!docSnap.exists()) return;
+  const data = docSnap.data();
+  // 1) 版本：云端记着"目前最新的版本号"。比我新 → 我立刻更新；比我旧 → 我把自己的版本号写上去，通知其他手机
+  const latest = Number(data.latestVersion) || 0;
+  if (latest > APP_VERSION) {
+    checkForUpdate();
+  } else if (latest < APP_VERSION) {
+    import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js')
+      .then(({ doc, setDoc }) => setDoc(doc(db, 'config', 'settings'), { latestVersion: APP_VERSION }, { merge: true }))
+      .catch(() => {});
+  }
+  // 2) 余额：别的手机记了账，这里马上跟着变
+  //    （本机有断网时记下、还没上传的记录时不覆盖，等补传对账后再说）
+  if (typeof data.fund === 'number' && !localHist().length) {
+    const shown = parseFloat(localStorage.getItem('ddz_fund'));
+    if (shown !== data.fund) {
+      localStorage.setItem('ddz_fund', data.fund.toString());
+      updateFundBanner();
+      const inp = document.getElementById('prevFundInput');
+      if (inp) inp.value = data.fund;
+      if (!state.savedTimestamp && !screenShown('resultScreen')) {
+        state.prevFund = data.fund;
+        if (screenShown('gameScreen')) showFundPreview();
+      }
+      // 正开着记录页面的话，稍等一下再刷新列表（等对方把记录也写完）
+      clearTimeout(_settingsRefreshTimer);
+      _settingsRefreshTimer = setTimeout(() => {
+        if (screenShown('historyScreen')) renderHistory();
+        if (screenShown('ledgerScreen')) renderLedger();
+      }, 1500);
+    }
+  }
 }
 
 function restoreGameState(snap, silent) {
@@ -1646,7 +1684,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 137; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 138; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -1684,7 +1722,14 @@ async function checkForUpdate() {
     _updateChecking = false;
   }
 }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkForUpdate(); });
+// 切回应用：查新版本，并把余额和账本重新对一遍
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  checkForUpdate();
+  if (window.db && typeof reconcileLedger === 'function') fundSerial(reconcileLedger);
+});
+// 应用一直开着不动时，也每分钟查一次新版本
+setInterval(() => { if (document.visibilityState === 'visible') checkForUpdate(); }, 60000);
 window.addEventListener('pageshow', () => checkForUpdate());
 window.addEventListener('online', () => checkForUpdate());
 
