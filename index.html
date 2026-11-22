@@ -291,7 +291,13 @@
     border-color: #fff;
     color: #fff;
     transform: scale(1.14) translateY(-2px);
-    box-shadow: 0 6px 14px rgba(0,0,0,0.5), 0 0 0 3px rgba(255,215,0,0.9);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.5), 0 0 0 3px rgba(255,215,0,0.9), 0 0 18px 6px rgba(255,200,60,0.75);
+    animation: chipGlow 1.6s ease-in-out infinite;
+  }
+  /* 像亮着的灯泡：一直发光，光晕轻轻呼吸 */
+  @keyframes chipGlow {
+    0%, 100% { box-shadow: 0 6px 14px rgba(0,0,0,0.5), 0 0 0 3px rgba(255,215,0,0.9), 0 0 12px 3px rgba(255,200,60,0.55); }
+    50%      { box-shadow: 0 6px 14px rgba(0,0,0,0.5), 0 0 0 3px rgba(255,235,120,1),  0 0 24px 9px rgba(255,210,80,0.95); }
   }
   .cost-chip.selected::before { content: '✓ '; }
   .cost-chip.dimmed { opacity: 0.55; box-shadow: none; }
@@ -881,7 +887,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v140</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v141</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
       <div id="syncStatus" onclick="syncNow()" style="margin-top:6px;font-size:12px;font-weight:700;color:#7dffa5;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">☁️ 云端已同步</div>
@@ -1739,7 +1745,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 140; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 141; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -2073,6 +2079,7 @@ function startGame() {
   state.gameId = 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   state.savedDocId = null;
   state.savedTimestamp = null;
+  resetCostNotes();
   // collect names
   state.players = [];
   for (let i = 0; i < state.playerCount; i++) {
@@ -2665,6 +2672,21 @@ function pickCostNote(inputId, text) {
   inp.value = inp.value === text ? '' : text;
   refreshCostChips(inputId);
 }
+// 加完一笔后：选中的快捷按钮保持亮着（可以连着加好几笔同类的），自己手写的备注才清空
+function keepChipNote(inputId) {
+  const inp = document.getElementById(inputId);
+  if (!inp) return;
+  const isChip = [...document.querySelectorAll(`.cost-chip[data-for="${inputId}"]`)].some(c => c.dataset.note === inp.value.trim());
+  if (!isChip) inp.value = '';
+  refreshCostChips(inputId);
+}
+function resetCostNotes() {
+  ['costAddNote', 'costNoteInput'].forEach(id => {
+    const inp = document.getElementById(id);
+    if (inp) inp.value = '';
+    refreshCostChips(id);
+  });
+}
 // 按备注框里现在的内容，标出哪个快捷按钮是选中的
 function refreshCostChips(inputId) {
   const inp = document.getElementById(inputId);
@@ -2686,8 +2708,7 @@ function addCost() {
   state.costItems.push({ amount: v, note });
   state.cost = state.costItems.reduce((s,x) => s + _costAmt(x), 0);
   inp.value = '';
-  if (noteInp) noteInp.value = '';
-  refreshCostChips('costAddNote');
+  keepChipNote('costAddNote');
   renderCostList();
   showFundPreview();
   saveGameState();
@@ -2727,8 +2748,7 @@ function addCostResult() {
   state.costItems.push({ amount: v, note });
   state.cost = state.costItems.reduce((s,x) => s + _costAmt(x), 0);
   inp.value = '';
-  if (noteInp) noteInp.value = '';
-  refreshCostChips('costNoteInput');
+  keepChipNote('costNoteInput');
   renderCostListResult();
   recalcFund();
   updateSavedCost().then(recalcFund);
