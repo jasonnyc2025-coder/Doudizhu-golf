@@ -853,7 +853,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v128</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v129</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -1640,7 +1640,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 128; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 129; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -2091,8 +2091,12 @@ function updateTableRow(hole) {
   const rl = document.getElementById(`rl_${hole}`);
   if (rl && land !== undefined) {
     // 地主赢的洞，在地主名字前加一个 ✅ 标记
-    const landWon = state.results[hole] && state.results[hole].type === 'landlord';
-    rl.innerHTML = `<span class="role-landlord">${landWon ? '✅ ' : ''}${state.players[land]}</span>`;
+    // 地主栏用颜色和图标直接标出地主这一洞的结果，避免被当成"地主都赢"
+    const rt = state.results[hole] ? state.results[hole].type : null;
+    const look = rt === 'landlord' ? { icon: '✅ ', css: 'background:linear-gradient(135deg,#2ecc71,#1e8449) !important;color:#fff;' }
+               : rt === 'farmer'   ? { icon: '❌ ', css: 'background:#fde4e1 !important;color:#b03a2e;box-shadow:none;border:1.5px solid #f1b0a8;' }
+               :                     { icon: '',    css: 'background:#eceae4 !important;color:#7a756a;box-shadow:none;border:1.5px solid #d8d4c8;' };
+    rl.innerHTML = `<span class="role-landlord" style="${look.css}">${look.icon}${state.players[land]}</span>`;
   }
 
   // running totals up to this hole
