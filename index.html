@@ -853,7 +853,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v126</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v127</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -866,6 +866,16 @@
   <div style="display:flex;gap:10px;padding:12px 16px;background:#0a3d18;border-left:2px solid var(--gold);border-right:2px solid var(--gold);border-bottom:2px solid var(--gold);border-radius:0 0 12px 12px;">
     <button onclick="goToSetup()" style="flex:1;padding:14px 0;font-size:19px;font-weight:900;color:#ffd700;background:linear-gradient(135deg,#8b0000,#c0392b);border:none;border-radius:12px;cursor:pointer;font-family:'Ma Shan Zheng',cursive;letter-spacing:3px;box-shadow:0 4px 14px rgba(139,0,0,0.5);">🎮 开始比赛</button>
     <button onclick="showLedger()" style="flex:1;padding:14px 0;font-size:19px;font-weight:900;color:#1a3300;background:linear-gradient(135deg,#f1c40f,#e67e22);border:none;border-radius:12px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;letter-spacing:2px;box-shadow:0 3px 10px rgba(0,0,0,0.25);">📒 记账本</button>
+  </div>
+  <!-- 正在进行的共享比赛（其他手机开的也会显示） -->
+  <div id="liveBanner" onclick="joinLiveGame()" style="display:none;margin-top:12px;padding:14px 16px;border:2px solid #27ae60;border-radius:12px;background:linear-gradient(135deg,#0d4a1f,#14602b);color:#fff;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.35);">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+      <div style="min-width:0;">
+        <div style="font-size:15px;font-weight:800;color:#7dffa5;">🟢 正在进行的比赛</div>
+        <div id="liveBannerText" style="font-size:15px;font-weight:600;margin-top:4px;line-height:1.4;"></div>
+      </div>
+      <div style="flex-shrink:0;padding:9px 14px;border-radius:8px;background:#ffd700;color:#1a3300;font-size:16px;font-weight:900;white-space:nowrap;">进入 ›</div>
+    </div>
   </div>
 
   <!-- ADJUST BALANCE DIALOG -->
@@ -1156,6 +1166,7 @@ let state = {
   selectedWinner: null,
   pocketMode: false,
   fullPocket: false,
+  gameId: null,
   fixedLandlord: false,
   savedDocId: null,
   savedTimestamp: null,
@@ -1167,6 +1178,7 @@ function hideAllScreens() {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
+  renderLiveBanner();
 }
 
 // ── PIN ────────────────────────────────────────────────────────────────
@@ -1310,6 +1322,7 @@ async function showMainApp() {
   updateFundBanner();
   // 每次打开都后台对一次账（补传离线记录、校正余额），不阻塞界面
   fundSerial(reconcileLedger);
+  startLiveWatch();
   renderPlayerInputs();
   populateStartHole();
   // Home = just the fund banner, main-card stays hidden
@@ -1329,9 +1342,18 @@ async function showMainApp() {
 }
 
 async function goToSetup() {
+  // 云端有正在进行的比赛：先问要不要进入
+  const live = liveSnap();
+  if (live) {
+    const names = Array.isArray(live.players) ? live.players.join('、') : '';
+    if (confirm(`有一场比赛正在进行\n玩家：${names}\n已记：${live.step || 0} 洞\n\n点"确定"进入这场比赛\n点"取消"另开一场新比赛`)) {
+      joinLiveGame();
+      return;
+    }
+  }
   // Check for in-progress game
   try {
-    const saved = localStorage.getItem('ddz_game_state');
+    const saved = live ? null : localStorage.getItem('ddz_game_state');
     if (saved) {
       const snap = JSON.parse(saved);
       if (snap && snap.step > 0 && snap.step < TOTAL_HOLES && Array.isArray(snap.players) && snap.players.length) {
@@ -1375,6 +1397,7 @@ function saveGameState() {
     startHole: state.startHole,
     pocketMode: state.pocketMode,
     fullPocket: !!state.fullPocket,
+    gameId: state.gameId || null,
     fixedLandlord: state.fixedLandlord,
     courseName: state.courseName,
     prevFund: state.prevFund,
@@ -1384,13 +1407,143 @@ function saveGameState() {
     costItems: state.costItems.slice(),
   };
   localStorage.setItem('ddz_game_state', JSON.stringify(snap));
+  pushLiveGame(snap);
 }
 
 function clearGameState() {
   localStorage.removeItem('ddz_game_state');
 }
 
-function restoreGameState(snap) {
+// ── 共享比赛：比赛进度实时同步到云端，所有手机都能查看和记分 ──────────────
+const DEVICE_ID = (() => {
+  let d = localStorage.getItem('ddz_device_id');
+  if (!d) { d = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); localStorage.setItem('ddz_device_id', d); }
+  return d;
+})();
+let _liveRev = 0;      // 本机已知的最新进度的版本号
+let _liveBy = '';      // ……以及它是哪台手机写的
+let _liveCloud = null; // 云端当前正在进行的比赛
+let _liveUnsub = null;
+
+function liveSnap() { try { return _liveCloud ? JSON.parse(_liveCloud.state) : null; } catch(e) { return null; } }
+function screenShown(id) { const el = document.getElementById(id); return !!el && el.style.display === 'block'; }
+
+// 两份进度谁更新：版本号大的赢；版本号相同按设备号定，保证所有手机结论一致
+function liveNewer(a, b) {
+  return a.rev > b.rev || (a.rev === b.rev && String(a.by) > String(b.by));
+}
+
+let _livePending = null; // 还没成功写上云端的最新一份
+function writeLiveDoc(payload) {
+  _livePending = payload;
+  import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js')
+    .then(({ doc, runTransaction }) => runTransaction(db, async (tx) => {
+      const ref = doc(db, 'config', 'liveGame');
+      const cur = await tx.get(ref);
+      // 云端已经有比我更新的进度（别人同时记了分）：不覆盖，稍后本机会收到并显示那一份
+      if (cur.exists() && typeof cur.data().rev === 'number' && liveNewer(cur.data(), payload)) return;
+      tx.set(ref, payload);
+    }))
+    .then(() => { if (_livePending === payload) _livePending = null; })
+    .catch(() => {});
+}
+// 断网时没写上去的进度，联网后补写（仍然只在它比云端新时才写）
+window.addEventListener('online', () => { if (_livePending) writeLiveDoc(_livePending); });
+
+function pushLiveGame(snap) {
+  if (!window.db || !snap.gameId) return;
+  _liveRev = Math.max(Date.now(), _liveRev + 1);
+  _liveBy = DEVICE_ID;
+  const payload = { active: true, rev: _liveRev, by: DEVICE_ID, gameId: snap.gameId, updatedAt: Date.now(), state: JSON.stringify(snap) };
+  _liveCloud = payload;
+  renderLiveBanner();
+  writeLiveDoc(payload);
+}
+
+// 结算或取消时，通知所有手机这场比赛结束了
+function endLiveGame(reason) {
+  if (!window.db || !_liveCloud || !state.gameId || _liveCloud.gameId !== state.gameId) return;
+  _liveRev = Math.max(Date.now(), _liveRev + 1);
+  _liveBy = DEVICE_ID;
+  _liveCloud = null;
+  renderLiveBanner();
+  writeLiveDoc({ active: false, rev: _liveRev, by: DEVICE_ID, gameId: state.gameId, reason: reason, updatedAt: Date.now() });
+}
+
+function renderLiveBanner() {
+  const el = document.getElementById('liveBanner');
+  if (!el) return;
+  const snap = liveSnap();
+  const show = !!snap && !screenShown('gameScreen') && !screenShown('resultScreen');
+  el.style.display = show ? 'block' : 'none';
+  if (show) {
+    const names = Array.isArray(snap.players) ? snap.players.join('、') : '';
+    document.getElementById('liveBannerText').textContent = `${names} · 已记 ${snap.step || 0} 洞`;
+  }
+}
+
+function joinLiveGame() {
+  const snap = liveSnap();
+  if (!snap) { renderLiveBanner(); return; }
+  localStorage.setItem('ddz_game_state', JSON.stringify(snap));
+  hideAllScreens();
+  document.getElementById('mainCard').style.display = 'block';
+  restoreGameState(snap, true);
+  showToast('已进入正在进行的比赛');
+}
+
+function onLiveSnapshot(docSnap) {
+  const data = docSnap.exists() ? docSnap.data() : null;
+  const known = { rev: _liveRev, by: _liveBy };
+  let isNewer = true;
+  if (data && typeof data.rev === 'number') {
+    const same = data.rev === known.rev && data.by === known.by; // 就是本机已经有的那一份
+    if (!same && !liveNewer(data, known)) return;                // 比本机已有的还旧，忽略
+    isNewer = !same && data.by !== DEVICE_ID;
+    _liveRev = data.rev;
+    _liveBy = data.by;
+  }
+  const inThisGame = screenShown('gameScreen') && !!state.gameId && !!data && data.gameId === state.gameId;
+  if (!data || !data.active) {
+    _liveCloud = null;
+    renderLiveBanner();
+    if (inThisGame && data.by !== DEVICE_ID) {
+      // 别人已经结算或取消了我正在看的这场比赛：退出到首页
+      clearGameState();
+      localStorage.removeItem('ddz_saved_ref');
+      state.results = []; state.scores = []; state.landlordHistory = [];
+      state.step = 0; state.cost = 0; state.costItems = [];
+      state.gameId = null; state.editingHole = null; state.selectedWinner = null;
+      hideAllScreens();
+      document.getElementById('mainCard').style.display = 'none';
+      showToast(data.reason === 'cancel' ? '这场比赛已被取消' : '这场比赛已结算，可在详细记录里查看');
+      setTimeout(() => fundSerial(reconcileLedger), 3000);
+    }
+    return;
+  }
+  _liveCloud = data;
+  renderLiveBanner();
+  if (data.by === DEVICE_ID) return;
+  if (inThisGame && isNewer) {
+    // 别人刚记了分：把最新进度显示出来
+    let snap = null;
+    try { snap = JSON.parse(data.state); } catch(e) {}
+    if (snap) {
+      localStorage.setItem('ddz_game_state', JSON.stringify(snap));
+      restoreGameState(snap, true);
+    }
+  }
+}
+
+async function startLiveWatch() {
+  if (!window.db || _liveUnsub) return;
+  try {
+    const { doc, onSnapshot } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    _liveUnsub = onSnapshot(doc(db, 'config', 'liveGame'), onLiveSnapshot, () => {});
+  } catch(e) {}
+}
+
+function restoreGameState(snap, silent) {
   Object.assign(state, snap);
   // 正在打的洞 = 打洞顺序里的下一个（快照里没有单独保存它）
   if (Array.isArray(state.playOrder) && state.step < state.playOrder.length) state.currentHole = state.playOrder[state.step];
@@ -1420,7 +1573,8 @@ function restoreGameState(snap) {
   renderHolePanel();
   renderTotals();
   centerHolePanel();
-  showToast('已恢复上次比赛进度 ✅');
+  renderLiveBanner();
+  if (!silent) showToast('已恢复上次比赛进度 ✅');
 }
 
 // ── COURSE SEARCH ──────────────────────────────────────────────────────
@@ -1481,7 +1635,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 126; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 127; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -1802,6 +1956,10 @@ function renderPlayerInputs() {
 }
 
 function startGame() {
+  if (liveSnap() && !confirm('已有一场比赛正在进行。\n开始新比赛会替换掉它，确定吗？')) return;
+  state.gameId = 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  state.savedDocId = null;
+  state.savedTimestamp = null;
   // collect names
   state.players = [];
   for (let i = 0; i < state.playerCount; i++) {
@@ -1852,6 +2010,8 @@ function startGame() {
   renderHolePanel();
   renderTotals();
   centerHolePanel();
+  saveGameState(); // 一开局就同步，别的手机马上能看到
+  renderLiveBanner();
 }
 
 // ── SCORE TABLE ────────────────────────────────────────────────────────
@@ -2146,6 +2306,7 @@ function pickNextHole(h) {
   }
   state.playOrder = state.playOrder.slice(0, state.step).concat(remaining);
   state.currentHole = h;
+  saveGameState();
   renderHolePanel();
   updateCurrentHoleHighlight();
   scrollToCurrentHole();
@@ -2164,6 +2325,7 @@ function skipCurrentHole() {
   state.playOrder.splice(idx, 1);
   state.playOrder.push(cur);
   state.currentHole = state.playOrder[state.step];
+  saveGameState();
   renderHolePanel();
   updateCurrentHoleHighlight();
   scrollToCurrentHole();
@@ -2193,6 +2355,7 @@ function confirmHole() {
     } else {
       renderHolePanel();
       centerHolePanel();
+      saveGameState();
     }
     showToast('第 ' + (h+1) + ' 洞已修改');
     return;
@@ -2475,6 +2638,7 @@ function showFundPreview() {
 
 // ── RESULT ─────────────────────────────────────────────────────────────
 async function showResult() {
+  endLiveGame('finished');
   document.getElementById('gameScreen').style.display = 'none';
   const result = document.getElementById('resultScreen');
   result.style.display = 'block';
@@ -2571,6 +2735,7 @@ async function newGame() {
   state.step = 0;
   state.cost = 0;
   state.costItems = [];
+  state.gameId = null;
   const newFund = await loadFund();
   updateFundBanner();
   document.getElementById('prevFundInput').value = newFund;
@@ -2608,6 +2773,8 @@ async function earlyFinish() {
 
 function doCancelGame() {
   hideCancelConfirm();
+  endLiveGame('cancel');
+  state.gameId = null;
   clearGameState();
   localStorage.removeItem('ddz_saved_ref');
   // 不保存历史、不改公积金，直接回到设置页
@@ -2670,6 +2837,19 @@ async function _saveHistory() {
   clearGameState();
   const { totals, adjusted, contribution, cost } = gameNumbers();
   if (totals.every(t => t === 0) && cost === 0) return;
+  // 同一场比赛如果别的手机已经结算过，就更新那条记录，不再新建
+  if (state.gameId) {
+    try {
+      const existing = (await getHistoryStrict()).find(r => r.gameId === state.gameId);
+      if (existing) {
+        state.savedDocId = existing._id || null;
+        state.savedTimestamp = existing.timestamp;
+        localStorage.setItem('ddz_saved_ref', JSON.stringify({ id: state.savedDocId, ts: existing.timestamp }));
+        await _updateSavedCost();
+        return;
+      }
+    } catch(e) {}
+  }
   // 以当前真实余额为准（比赛中途可能有存入/支出），不用开局时记下的旧值
   const prevFund = r2(await loadFund());
   state.prevFund = prevFund;
@@ -2683,6 +2863,7 @@ async function _saveHistory() {
     amounts: adjusted.map(a => a * 100),
     scores: totals.slice(),
     mode: state.fullPocket ? 'fullPocket' : state.pocketMode ? 'pocket' : 'normal',
+    gameId: state.gameId || '',
     prevFund: prevFund,
     contribution: contribution,
     cost: cost,
