@@ -336,27 +336,25 @@
   .change-hole-btn {
     white-space: nowrap;
     flex-shrink: 0;
-    background: rgba(201,168,76,0.15);
-    border: 1px solid #c9a84c;
-    color: #6b3a1f;
-    padding: 4px 10px;
-    border-radius: 14px;
-    font-size: 12px;
-    font-weight: 600;
+    background: linear-gradient(135deg, #ffe9a8, #f5c542);
+    border: 1.5px solid #c9962a;
+    color: #5a2d0c;
+    padding: 8px 12px;
+    border-radius: 18px;
+    font-size: 16px;
+    font-weight: 800;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.18);
     cursor: pointer;
     font-family: 'Noto Sans SC', sans-serif;
     transition: background 0.15s;
   }
   .change-hole-btn:hover, .change-hole-btn:active {
-    background: rgba(201,168,76,0.32);
+    filter: brightness(0.93);
   }
   .skip-hole-btn {
-    background: rgba(192,57,43,0.12);
-    border-color: #c0392b;
-    color: #8b0000;
-  }
-  .skip-hole-btn:hover, .skip-hole-btn:active {
-    background: rgba(192,57,43,0.25);
+    background: linear-gradient(135deg, #f6b0a6, #e8695a);
+    border-color: #b03a2e;
+    color: #fff;
   }
   .skip-hole-btn:disabled {
     opacity: 0.4;
@@ -859,7 +857,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v135</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v136</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -1015,7 +1013,7 @@
             <button class="change-hole-btn skip-hole-btn" id="skipHoleBtn" onclick="skipCurrentHole()" style="display:none;">⏭ 跳过</button>
           </div>
           <div id="gameMenuWrap" style="position:relative;margin-left:auto;flex-shrink:0;">
-            <button id="gameMenuBtn" onclick="toggleGameMenu(event)" style="padding:6px 9px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans SC',sans-serif;white-space:nowrap;background:rgba(107,58,31,0.06);border:1.5px solid #b08a5a;color:#6b3a1f;">☰ 结束</button>
+            <button id="gameMenuBtn" onclick="toggleGameMenu(event)" style="padding:8px 12px;border-radius:10px;font-size:16px;font-weight:800;cursor:pointer;font-family:'Noto Sans SC',sans-serif;white-space:nowrap;background:linear-gradient(135deg,#7a4a22,#4a2a10);border:1.5px solid #3a1f0a;color:#ffe9a8;box-shadow:0 2px 5px rgba(0,0,0,0.25);">☰ 结束</button>
             <div id="gameMenu" style="display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:50;min-width:170px;background:#fffdf5;border:1.5px solid #c9a84c;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.28);overflow:hidden;">
               <button onclick="closeGameMenu();earlyFinish()" style="display:block;width:100%;text-align:left;padding:14px 16px;background:none;border:none;border-bottom:1px solid #eadfc0;font-size:16px;font-weight:700;color:#e67e22;cursor:pointer;font-family:'Noto Sans SC',sans-serif;white-space:nowrap;">🏁 提前结束并结算</button>
               <button onclick="closeGameMenu();cancelGame()" style="display:block;width:100%;text-align:left;padding:14px 16px;background:none;border:none;font-size:16px;font-weight:700;color:#c0392b;cursor:pointer;font-family:'Noto Sans SC',sans-serif;white-space:nowrap;">✕ 取消游戏（不保存）</button>
@@ -1648,7 +1646,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 135; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 136; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
