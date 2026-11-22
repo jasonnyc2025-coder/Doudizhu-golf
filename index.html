@@ -276,8 +276,8 @@
     color: #8b0000;
     border-radius: 4px;
     font-weight: 700;
-    font-size: 18px;
-    padding: 4px 10px;
+    font-size: 15px;
+    padding: 3px 8px;
     display: inline-block;
   }
   .role-farmer {
@@ -853,7 +853,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v129</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v130</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -1640,7 +1640,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 129; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 130; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -2026,7 +2026,7 @@ function buildScoreTable() {
 
   // header: 洞 | 地主 | 玩家... | 总分
   let th = `<tr><th>洞</th><th>地主</th>`;
-  state.players.forEach(p => th += `<th><b>${p}</b></th>`);
+  state.players.forEach(p => th += `<th class="player-th" style="font-size:21px;font-weight:900;padding-left:3px;padding-right:3px;letter-spacing:0;"><b>${p}</b></th>`);
   th += `<th style="background:linear-gradient(180deg,#5a3000,#8b4500);color:#ffd700;border-left:2px solid #c9a84c;">总分</th></tr>`;
   head.innerHTML = th;
 
@@ -2058,9 +2058,23 @@ function buildScoreTable() {
   footHtml += `<td id="ft_total" style="padding:8px 6px;text-align:center;font-size:15px;font-weight:700;color:#ffd700;border-left:2px solid #c9a84c;">0</td></tr>`;
   tfoot.innerHTML = footHtml;
   tbl.appendChild(tfoot);
+  fitPlayerHeaders();
 
   updateCurrentHoleHighlight();
 }
+
+// 表头玩家名字尽量大（21px），放不下时逐级缩小，保证表格不超出卡片宽度
+function fitPlayerHeaders() {
+  const tbl = document.getElementById('scoreTable');
+  const box = tbl ? tbl.parentElement : null;
+  if (!tbl || !box || !box.clientWidth) return;
+  const ths = tbl.querySelectorAll('th.player-th');
+  for (let size = 21; size >= 13; size--) {
+    ths.forEach(th => { th.style.fontSize = size + 'px'; });
+    if (tbl.scrollWidth <= box.clientWidth + 1) break;
+  }
+}
+window.addEventListener('resize', fitPlayerHeaders);
 
 function updateCurrentHoleHighlight() {
   for (let h = 0; h < TOTAL_HOLES; h++) {
@@ -2084,6 +2098,7 @@ function updateCurrentHoleHighlight() {
       if (tr) body.appendChild(tr);
     }
   }
+  fitPlayerHeaders(); // 行内容变化后重新适配表头字号
 }
 
 function updateTableRow(hole) {
