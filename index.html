@@ -857,7 +857,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v136</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v137</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -1646,7 +1646,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 136; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 137; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -2116,7 +2116,7 @@ function updateTableRow(hole) {
     const rt = state.results[hole] ? state.results[hole].type : null;
     const look = rt === 'landlord' ? { icon: '✅ ', css: 'background:linear-gradient(135deg,#2ecc71,#1e8449) !important;color:#fff;' }
                : rt === 'farmer'   ? { icon: '❌ ', css: 'background:#fde4e1 !important;color:#b03a2e;box-shadow:none;border:1.5px solid #f1b0a8;' }
-               :                     { icon: '',    css: 'background:#eceae4 !important;color:#7a756a;box-shadow:none;border:1.5px solid #d8d4c8;' };
+               :                     { icon: '<span style="display:inline-block;width:18px;height:6px;border-radius:3px;background:#f7b500;flex-shrink:0;margin-right:4px;"></span>', css: 'background:#eceae4 !important;color:#7a756a;box-shadow:none;border:1.5px solid #d8d4c8;' };
     rl.innerHTML = `<span class="role-landlord" style="${look.css}">${look.icon}${state.players[land]}</span>`;
   }
 
@@ -2142,9 +2142,6 @@ function updateTableRow(hole) {
         const m = res.mult || 1;
         const winIcon = m === 2 ? '🐦' : m === 3 ? '🦅' : '👍';
         cell.innerHTML = (v === 0 ? '' : `<div>${v}</div>`) + `<div style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;border:2px solid #f7b500;background:#fff8dc;font-size:17px;line-height:1;box-sizing:border-box;">${winIcon}</div>`;
-      } else if (res && res.type === 'tie' && pi === land) {
-        // 平局：地主那一格显示一条橘黄色粗横杠
-        cell.innerHTML = '<div style="width:24px;height:6px;border-radius:3px;background:#f7b500;margin:0 auto;"></div>';
       } else {
         cell.textContent = v === 0 ? '—' : v;
       }
