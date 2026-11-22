@@ -853,7 +853,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v130</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v131</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -1640,7 +1640,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 130; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 131; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -2026,7 +2026,7 @@ function buildScoreTable() {
 
   // header: 洞 | 地主 | 玩家... | 总分
   let th = `<tr><th>洞</th><th>地主</th>`;
-  state.players.forEach(p => th += `<th class="player-th" style="font-size:21px;font-weight:900;padding-left:3px;padding-right:3px;letter-spacing:0;"><b>${p}</b></th>`);
+  state.players.forEach(p => th += `<th class="player-th" style="font-size:21px;font-weight:900;padding-left:3px;padding-right:3px;letter-spacing:0;background:linear-gradient(180deg,#0d4a1f,#1a6b33);border-left:1px solid rgba(255,255,255,0.35);"><b>${p}</b></th>`);
   th += `<th style="background:linear-gradient(180deg,#5a3000,#8b4500);color:#ffd700;border-left:2px solid #c9a84c;">总分</th></tr>`;
   head.innerHTML = th;
 
@@ -2038,7 +2038,7 @@ function buildScoreTable() {
     const isStart = h === state.startHole && state.startHole !== 0;
     const holeLabel = isStart ? `${h+1} <span style="color:#27ae60;font-size:10px;">起</span>` : `${h+1}`;
     tr.innerHTML = `<td class="hole-num">${holeLabel}</td><td id="rl_${h}">—</td>` +
-      state.players.map((_,pi) => `<td id="sc_${h}_${pi}">—</td>`).join('') +
+      state.players.map((_,pi) => `<td id="sc_${h}_${pi}" style="border-left:1px solid #e3d6ae;">—</td>`).join('') +
       `<td id="rt_${h}" style="border-left:2px solid #e8d5a0;font-weight:700;font-size:13px;color:#999;">—</td>`;
     tr.onclick = () => editHole(h);
     body.appendChild(tr);
@@ -2053,7 +2053,7 @@ function buildScoreTable() {
   let footHtml = `<tr style="background:linear-gradient(180deg,#3a1a00,#5a2800);">
     <td colspan="2" style="padding:8px 6px;text-align:center;font-size:12px;font-weight:700;color:#ffd700;letter-spacing:1px;">合计</td>`;
   state.players.forEach((_,pi) => {
-    footHtml += `<td id="ft_${pi}" style="padding:8px 6px;text-align:center;font-size:15px;font-weight:700;color:#aaa;">0</td>`;
+    footHtml += `<td id="ft_${pi}" style="border-left:1px solid #e3d6ae;padding:8px 6px;text-align:center;font-size:15px;font-weight:700;color:#aaa;">0</td>`;
   });
   footHtml += `<td id="ft_total" style="padding:8px 6px;text-align:center;font-size:15px;font-weight:700;color:#ffd700;border-left:2px solid #c9a84c;">0</td></tr>`;
   tfoot.innerHTML = footHtml;
