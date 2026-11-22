@@ -853,7 +853,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v132</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v133</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
     </div>
@@ -1038,8 +1038,9 @@
               <input type="number" id="costAddInput" placeholder="输入金额" min="0"
                 style="width:100%;padding:7px 10px;border:1.5px solid rgba(107,203,119,0.5);border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;background:rgba(255,255,255,0.95);box-sizing:border-box;"
                 onkeydown="if(event.key==='Enter')addCost()">
-              <input type="text" id="costAddNote" placeholder="备注（选填）" maxlength="20"
-                style="width:100%;padding:5px 10px;border:1.5px solid rgba(107,203,119,0.3);border-radius:6px;font-size:12px;font-family:'Noto Sans SC',sans-serif;outline:none;background:rgba(255,255,255,0.8);box-sizing:border-box;"
+              <div style="display:flex;gap:6px;flex-wrap:wrap;"><button type="button" onclick="pickCostNote('costAddNote','小费')" style="padding:6px 14px;border-radius:16px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans SC',sans-serif;white-space:nowrap;background:rgba(255,255,255,0.14);border:1.5px solid rgba(125,255,165,0.6);color:#d9ffe4;">小费</button><button type="button" onclick="pickCostNote('costAddNote','食物')" style="padding:6px 14px;border-radius:16px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans SC',sans-serif;white-space:nowrap;background:rgba(255,255,255,0.14);border:1.5px solid rgba(125,255,165,0.6);color:#d9ffe4;">食物</button></div>
+              <input type="text" id="costAddNote" placeholder="或自己写备注（选填）" maxlength="20"
+                style="width:100%;padding:6px 10px;border:1.5px solid rgba(107,203,119,0.3);border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;background:rgba(255,255,255,0.8);box-sizing:border-box;"
                 onkeydown="if(event.key==='Enter')addCost()">
             </div>
             <button onclick="addCost()"
@@ -1064,8 +1065,9 @@
             <input type="number" id="costInput" placeholder="输入金额" min="0"
               style="width:100%;padding:8px 12px;border:1.5px solid #c9a84c;border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;box-sizing:border-box;"
               onkeydown="if(event.key==='Enter')addCostResult()">
-            <input type="text" id="costNoteInput" placeholder="备注（选填）" maxlength="20"
-              style="width:100%;padding:6px 12px;border:1.5px solid #e8c88c;border-radius:6px;font-size:12px;font-family:'Noto Sans SC',sans-serif;outline:none;box-sizing:border-box;"
+            <div style="display:flex;gap:6px;flex-wrap:wrap;"><button type="button" onclick="pickCostNote('costNoteInput','小费')" style="padding:6px 14px;border-radius:16px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans SC',sans-serif;white-space:nowrap;background:#fff;border:1.5px solid #c9a84c;color:#6b3a1f;">小费</button><button type="button" onclick="pickCostNote('costNoteInput','食物')" style="padding:6px 14px;border-radius:16px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans SC',sans-serif;white-space:nowrap;background:#fff;border:1.5px solid #c9a84c;color:#6b3a1f;">食物</button></div>
+            <input type="text" id="costNoteInput" placeholder="或自己写备注（选填）" maxlength="20"
+              style="width:100%;padding:6px 12px;border:1.5px solid #e8c88c;border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;box-sizing:border-box;"
               onkeydown="if(event.key==='Enter')addCostResult()">
           </div>
           <button onclick="addCostResult()"
@@ -1640,7 +1642,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 132; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 133; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -2552,6 +2554,13 @@ function renderTotals() {
 
 function _costAmt(c) { return typeof c === 'number' ? c : (c.amount || 0); }
 function _costNote(c) { return typeof c === 'number' ? '' : (c.note || ''); }
+
+// 费用备注快捷选项：点一下填进备注框，再点同一个则清空；也可以直接在框里自己写
+function pickCostNote(inputId, text) {
+  const inp = document.getElementById(inputId);
+  if (!inp) return;
+  inp.value = inp.value === text ? '' : text;
+}
 
 function addCost() {
   const inp = document.getElementById('costAddInput');
