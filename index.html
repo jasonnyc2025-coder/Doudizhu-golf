@@ -135,12 +135,30 @@
     margin-bottom: 20px;
   }
   .setup-label {
-    font-size: 13px;
-    font-weight: 700;
-    color: #6b3a1f;
+    font-size: 18px;
+    font-weight: 900;
+    color: #8b0000;
     margin-bottom: 8px;
     letter-spacing: 1px;
-    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  /* 设置步骤的序号 */
+  .step-no {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #c0392b, #8b0000);
+    color: #ffd700;
+    font-size: 16px;
+    font-weight: 900;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.25);
   }
 
   .player-inputs { display: flex; flex-direction: column; gap: 8px; }
@@ -887,7 +905,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v141</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v142</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
       <div id="syncStatus" onclick="syncNow()" style="margin-top:6px;font-size:12px;font-weight:700;color:#7dffa5;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">☁️ 云端已同步</div>
@@ -975,7 +993,7 @@
       <div class="setup-title">⚙ 游戏设置</div>
 
       <div class="setup-section">
-        <div class="setup-label">👥 玩家人数</div>
+        <div class="setup-label"><span class="step-no">1</span>玩家人数</div>
         <select id="playerCountSelect" onchange="setPlayerCount(parseInt(this.value))"
           style="width:100%;padding:10px 14px;font-size:21px;font-weight:800;font-family:'Noto Sans SC',sans-serif;border:1.5px solid var(--border);border-radius:8px;background:#fffdf5;color:var(--ink);outline:none;cursor:pointer;">
           <option value="2">2 人</option>
@@ -992,16 +1010,16 @@
 
       <div class="setup-section" style="display:flex;gap:20px;align-items:flex-start;">
         <div style="flex:1;min-width:0;">
-          <div class="setup-label" id="landlordLabel">👑 第一洞地主</div>
+          <div class="setup-label" id="landlordLabel"><span class="step-no">2</span>第一洞地主</div>
           <div class="first-landlord-select" id="firstLandlordSelect"></div>
         </div>
         <div id="pocketSide" style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-          <div class="setup-label" style="margin-bottom:0;white-space:nowrap;">💰 计分方式</div>
+          <div class="setup-label" style="margin-bottom:0;white-space:nowrap;"><span class="step-no">3</span>计分方式</div>
         </div>
       </div>
       <div style="display:flex;gap:16px;align-items:flex-start;">
         <div class="setup-section" style="flex:1;min-width:0;">
-          <div class="setup-label">⛳ 从第几洞开始</div>
+          <div class="setup-label"><span class="step-no">4</span>从第几洞开始</div>
           <div style="display:flex;gap:6px;align-items:center;">
             <select id="startHoleSelect" style="flex:1;padding:10px 10px;border:1.5px solid #c9a84c;border-radius:6px;font-size:21px;font-family:'Noto Sans SC',sans-serif;background:white;color:var(--ink);outline:none;font-weight:800;min-width:0;"></select>
           </div>
@@ -1712,7 +1730,7 @@ function toggleFixedLandlord() {
   const btn = document.getElementById('fixedLandlordBtn');
   btn.classList.toggle('active');
   state.fixedLandlord = btn.classList.contains('active');
-  document.getElementById('landlordLabel').textContent = state.fixedLandlord ? '👑 整场地主' : '👑 第一洞地主';
+  document.getElementById('landlordLabel').innerHTML = '<span class="step-no">2</span>' + (state.fixedLandlord ? '整场地主' : '第一洞地主');
 }
 
 // 下拉框选项跟随玩家姓名输入框实时更新
@@ -1745,7 +1763,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 141; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 142; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -2071,7 +2089,7 @@ function renderPlayerInputs() {
   pocketSide.appendChild(fixedBtn);
 
   state.firstLandlord = 0;
-  document.getElementById('landlordLabel').textContent = state.fixedLandlord ? '👑 整场地主' : '👑 第一洞地主';
+  document.getElementById('landlordLabel').innerHTML = '<span class="step-no">2</span>' + (state.fixedLandlord ? '整场地主' : '第一洞地主');
 }
 
 function startGame() {
