@@ -925,7 +925,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v150</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v151</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
       <div id="syncStatus" onclick="syncNow()" style="margin-top:6px;font-size:12px;font-weight:700;color:#7dffa5;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">☁️ 云端已同步</div>
@@ -1154,7 +1154,7 @@
       </div>
       <div class="result-fund-box" id="resultFundBox"></div>
       <button onclick="finishGame()" style="width:100%;padding:16px;font-size:20px;font-weight:900;color:#fff;background:linear-gradient(135deg,#1a5c35,#27ae60);border:none;border-radius:12px;cursor:pointer;font-family:'Ma Shan Zheng',cursive;letter-spacing:3px;box-shadow:0 4px 14px rgba(39,174,96,0.4);margin-bottom:10px;">✅ 完 成 比 赛</button>
-      <button class="new-game-btn" onclick="newGame()">新一局（不保存）↺</button>
+      <button class="new-game-btn" onclick="discardGame()">新一局（不保存）↺</button>
     </div>
 
     <!-- HISTORY SCREEN -->
@@ -1790,7 +1790,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 150; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 151; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -2962,6 +2962,56 @@ async function finishGame() {
   } finally {
     _finishing = false;
   }
+}
+
+// "新一局（不保存）"：把结算时自动保存的这条记录撤掉，公积金恢复原样，再回到首页
+let _discarding = false;
+async function discardGame() {
+  if (_discarding || _finishing) return;
+  if (!confirm('不保存这场比赛？\n\n这场比赛的记录会被删除，公积金恢复到比赛前的金额。')) return;
+  _discarding = true;
+  try {
+    const ok = await fundSerial(_discardSavedRecord);
+    if (!ok) { showToast('网络不稳定，暂时无法撤销，请稍后再试'); return; }
+    await newGame();
+    showToast('这场比赛没有保存');
+  } finally {
+    _discarding = false;
+  }
+}
+// 返回 true 表示记录已经不存在了（删掉了，或本来就没有）
+async function _discardSavedRecord() {
+  const ts = state.savedTimestamp;
+  if (!ts) {
+    // 还没保存过：清空本局数据，之后也不会再保存
+    state.results = []; state.scores = []; state.cost = 0; state.costItems = [];
+    return true;
+  }
+  if (window.db) {
+    let hist;
+    try { hist = await getHistoryStrict(); } catch(e) { return false; }
+    const rec = hist.find(r => r.timestamp === ts);
+    if (rec && rec._id) {
+      try {
+        const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+        await withTimeout(deleteDoc(doc(db, 'history', rec._id)));
+      } catch(e) { return false; }
+    }
+  }
+  setLocalHist(localHist().filter(r => r.timestamp !== ts));
+  state.savedTimestamp = null;
+  state.savedDocId = null;
+  localStorage.removeItem('ddz_saved_ref');
+  state.results = []; state.scores = []; state.cost = 0; state.costItems = [];
+  const result = await reconcileLedger();
+  if (!result && !window.db) {
+    // 没有云端：直接按本机记录重算
+    const h = localHist();
+    const r = replayLedger(h, await getOpeningFund(h));
+    await saveFund(r.fund);
+  }
+  updateFundBanner();
+  return true;
 }
 
 async function newGame() {
