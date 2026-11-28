@@ -905,7 +905,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v143</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v144</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
       <div id="syncStatus" onclick="syncNow()" style="margin-top:6px;font-size:12px;font-weight:700;color:#7dffa5;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">☁️ 云端已同步</div>
@@ -1686,7 +1686,7 @@ function restoreGameState(snap, silent) {
   const courseDisplay = document.getElementById('gameCourseNameDisplay');
   const headerParts = [];
   if (state.courseName) headerParts.push('⛳ ' + state.courseName);
-  if (state.pocketMode) headerParts.push('💰 进入口袋');
+  if (state.pocketMode) headerParts.push('💰 一半进袋');
   if (state.fullPocket) headerParts.push('💰 全进口袋');
   if (isOffFund()) headerParts.push('不计入公积金');
   if (state.fixedLandlord) headerParts.push('🔒 固定地主');
@@ -1711,7 +1711,7 @@ function restoreGameState(snap, silent) {
 }
 
 // ── COURSE SEARCH ──────────────────────────────────────────────────────
-// "进入口袋"和"全进口袋"是两种计分方式，只能二选一（都不选 = 普通）
+// "一半进袋"和"全进口袋"是两种计分方式，只能二选一（都不选 = 普通）
 function togglePocketMode() {
   const btn = document.getElementById('pocketModeBtn');
   btn.classList.toggle('active');
@@ -1719,7 +1719,7 @@ function togglePocketMode() {
   if (state.pocketMode) {
     state.fullPocket = false;
     document.getElementById('fullPocketBtn').classList.remove('active');
-    showToast('进入口袋：只记录比赛，不计入公积金');
+    showToast('一半进袋：只记录比赛，不计入公积金');
   }
 }
 function toggleFullPocket() {
@@ -1770,7 +1770,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 143; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 144; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -1853,7 +1853,7 @@ function withTimeout(promise, ms = 10000) {
   return Promise.race([promise, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
 }
 
-// "进入口袋"和"全进口袋"是和其他朋友打的比赛：只记录比赛，不动我们的公积金
+// "一半进袋"和"全进口袋"是和其他朋友打的比赛：只记录比赛，不动我们的公积金
 function isOffFund() { return !!(state.pocketMode || state.fullPocket); }
 
 function gameNumbers() {
@@ -2079,7 +2079,7 @@ function renderPlayerInputs() {
   pocketBtn.id = 'pocketModeBtn';
   pocketBtn.className = 'pocket-toggle' + (state.pocketMode ? ' active' : '');
   pocketBtn.title = '开启后：地主赢 → 地主+1分，各农民−1分';
-  pocketBtn.textContent = '进入口袋';
+  pocketBtn.textContent = '一半进袋';
   pocketBtn.onclick = togglePocketMode;
   pocketSide.appendChild(pocketBtn);
 
@@ -2144,7 +2144,7 @@ function startGame() {
   const courseDisplay = document.getElementById('gameCourseNameDisplay');
   let headerParts = [];
   if (state.courseName) headerParts.push('⛳ ' + state.courseName);
-  if (state.pocketMode) headerParts.push('💰 进入口袋');
+  if (state.pocketMode) headerParts.push('💰 一半进袋');
   if (state.fullPocket) headerParts.push('💰 全进口袋');
   if (isOffFund()) headerParts.push('不计入公积金');
   if (state.fixedLandlord) headerParts.push('🔒 固定地主');
@@ -2903,7 +2903,7 @@ function recalcFund() {
     const pot = -getTotals().reduce((a, b) => a + b, 0);
     document.getElementById('resultFundBox').innerHTML = `
     <div class="result-fund-title">📝 本场只记录比赛</div>
-    <div class="result-fund-detail">计分方式：${state.fullPocket ? '全进口袋' : '进入口袋'}（和其他朋友的比赛）</div>
+    <div class="result-fund-detail">计分方式：${state.fullPocket ? '全进口袋' : '一半进袋'}（和其他朋友的比赛）</div>
     ${pot > 0 ? `<div class="result-fund-detail">总分（锅）：${pot} 分 ＝ ฿${(pot * 100).toLocaleString()}，由这场比赛的朋友们自己处理</div>` : ''}
     <div class="result-fund-detail" style="border-top:1px solid rgba(107,203,119,0.3);padding-top:8px;margin-top:4px;">不计入我们的公积金，余额不变</div>
     <div class="result-fund-new">฿${prev.toLocaleString()}</div>
