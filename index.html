@@ -303,6 +303,11 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     transition: transform 0.12s, box-shadow 0.12s, opacity 0.12s;
   }
+  /* 窄屏：比赛页的"费用"两个字收起只留图标，给金额框腾地方；快捷按钮保持一行 */
+  @media (max-width: 380px) {
+    .cost-label-text { display: none; }
+    .cost-chip { padding: 6px 11px; }
+  }
   /* 选中的那个：底色变深、像按下去一样；点的时候闪一下 */
   .cost-chip.selected {
     background: linear-gradient(135deg, #b9770e, #8a5200);
@@ -980,7 +985,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v160</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v161</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
       <div id="syncStatus" onclick="syncNow()" style="margin-top:6px;font-size:12px;font-weight:700;color:#7dffa5;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">☁️ 云端已同步</div>
@@ -1168,17 +1173,17 @@
         <div class="fund-title">🏦 公积金预览 <span id="fundPreviewDate" style="font-size:11px;opacity:0.7;font-family:'Noto Sans SC',sans-serif;font-weight:400;letter-spacing:0;"></span></div>
         <div style="background:rgba(15,18,40,0.55);border:1px solid rgba(255,233,168,0.35);border-radius:8px;padding:10px 12px;margin-bottom:10px;">
           <div style="display:flex;gap:8px;align-items:flex-start;">
-            <span style="font-size:16px;color:#ffe9a8;white-space:nowrap;padding-top:8px;">💰 费用</span>
+            <span class="cost-label" style="font-size:16px;color:#ffe9a8;white-space:nowrap;padding-top:8px;">💰<span class="cost-label-text"> 费用</span></span>
             <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;">
               <div style="display:flex;gap:8px;">
                 <input type="number" id="costAddInput" placeholder="金额" size="1" min="0"
-                style="flex:0 0 36%;min-width:0;width:auto;padding:7px 10px;border:1.5px solid rgba(255,233,168,0.6);border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;background:rgba(255,255,255,0.95);box-sizing:border-box;"
+                style="flex:0 0 40%;min-width:0;width:auto;padding:7px 8px;border:1.5px solid rgba(255,233,168,0.6);border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;background:rgba(255,255,255,0.95);box-sizing:border-box;"
                 onkeydown="if(event.key==='Enter')addCost()">
                 <input type="text" id="costAddNote" placeholder="备注（选填）" size="1" maxlength="20" oninput="refreshCostChips('costAddNote')"
-                style="flex:1;min-width:0;width:auto;padding:7px 10px;border:1.5px solid rgba(255,233,168,0.4);border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;background:rgba(255,255,255,0.8);box-sizing:border-box;"
+                style="flex:1;min-width:0;width:auto;padding:7px 8px;border:1.5px solid rgba(255,233,168,0.4);border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;background:rgba(255,255,255,0.8);box-sizing:border-box;"
                 onkeydown="if(event.key==='Enter')addCost()">
               </div>
-              <div style="display:flex;gap:6px;flex-wrap:wrap;"><button type="button" onclick="pickCostNote('costAddNote','小费')" class="cost-chip" data-for="costAddNote" data-note="小费">小费</button><button type="button" onclick="pickCostNote('costAddNote','食物')" class="cost-chip" data-for="costAddNote" data-note="食物">食物</button></div>
+              <div style="display:flex;gap:6px;flex-wrap:nowrap;"><button type="button" onclick="pickCostNote('costAddNote','小费')" class="cost-chip" data-for="costAddNote" data-note="小费">小费</button><button type="button" onclick="pickCostNote('costAddNote','食物')" class="cost-chip" data-for="costAddNote" data-note="食物">食物</button></div>
             </div>
             <button onclick="addCost()"
               style="padding:7px 14px;background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Noto Sans SC',sans-serif;margin-top:1px;">＋ 加</button>
@@ -1852,7 +1857,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 160; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 161; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
