@@ -905,7 +905,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v142</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v143</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
       <div id="syncStatus" onclick="syncNow()" style="margin-top:6px;font-size:12px;font-weight:700;color:#7dffa5;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">☁️ 云端已同步</div>
@@ -1082,6 +1082,10 @@
 
       <div class="totals-bar" id="totalsBar"></div>
 
+      <div id="offFundNote" style="display:none;padding:16px 18px;background:linear-gradient(180deg,#2a2f3a,#1d212a);color:#dfe6f0;text-align:center;font-family:'Noto Sans SC',sans-serif;">
+        <div style="font-size:17px;font-weight:800;color:#ffd700;">📝 本场只记录比赛</div>
+        <div style="font-size:14px;margin-top:6px;line-height:1.6;opacity:0.9;">这种计分方式是和其他朋友打的比赛，<b>不计入公积金</b>，余额不会变化。</div>
+      </div>
       <div class="fund-result" id="fundResult" style="display:none;">
         <div class="fund-title">🏦 公积金预览 <span id="fundPreviewDate" style="font-size:11px;opacity:0.7;font-family:'Noto Sans SC',sans-serif;font-weight:400;letter-spacing:0;"></span></div>
         <div style="background:rgba(0,0,0,0.18);border-radius:8px;padding:10px 12px;margin-bottom:10px;">
@@ -1684,6 +1688,7 @@ function restoreGameState(snap, silent) {
   if (state.courseName) headerParts.push('⛳ ' + state.courseName);
   if (state.pocketMode) headerParts.push('💰 进入口袋');
   if (state.fullPocket) headerParts.push('💰 全进口袋');
+  if (isOffFund()) headerParts.push('不计入公积金');
   if (state.fixedLandlord) headerParts.push('🔒 固定地主');
   courseDisplay.textContent = headerParts.join('  ');
   document.getElementById('holePanel').style.display = 'block';
@@ -1714,6 +1719,7 @@ function togglePocketMode() {
   if (state.pocketMode) {
     state.fullPocket = false;
     document.getElementById('fullPocketBtn').classList.remove('active');
+    showToast('进入口袋：只记录比赛，不计入公积金');
   }
 }
 function toggleFullPocket() {
@@ -1723,6 +1729,7 @@ function toggleFullPocket() {
   if (state.fullPocket) {
     state.pocketMode = false;
     document.getElementById('pocketModeBtn').classList.remove('active');
+    showToast('全进口袋：只记录比赛，不计入公积金');
   }
 }
 
@@ -1763,7 +1770,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 142; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 143; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -1846,13 +1853,17 @@ function withTimeout(promise, ms = 10000) {
   return Promise.race([promise, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
 }
 
+// "进入口袋"和"全进口袋"是和其他朋友打的比赛：只记录比赛，不动我们的公积金
+function isOffFund() { return !!(state.pocketMode || state.fullPocket); }
+
 function gameNumbers() {
   const totals = getTotals();
   const baseScore = Math.max(...totals);
-  // 全进口袋：输赢在玩家之间结清，公积金没有贡献
-  const adjusted = state.fullPocket ? totals.map(() => 0) : totals.map(t => Math.abs(t - baseScore));
+  const off = isOffFund();
+  // 不计入公积金的比赛：贡献和费用都按 0 算，余额完全不变
+  const adjusted = off ? totals.map(() => 0) : totals.map(t => Math.abs(t - baseScore));
   const contribution = adjusted.reduce((s,t) => s + t, 0) * 100;
-  const cost = r2(state.cost || 0);
+  const cost = off ? 0 : r2(state.cost || 0);
   return { totals, adjusted, contribution, cost, net: r2(contribution - cost) };
 }
 
@@ -2135,6 +2146,7 @@ function startGame() {
   if (state.courseName) headerParts.push('⛳ ' + state.courseName);
   if (state.pocketMode) headerParts.push('💰 进入口袋');
   if (state.fullPocket) headerParts.push('💰 全进口袋');
+  if (isOffFund()) headerParts.push('不计入公积金');
   if (state.fixedLandlord) headerParts.push('🔒 固定地主');
   courseDisplay.textContent = headerParts.join('  ');
 
@@ -2801,7 +2813,10 @@ function showFundPreview() {
   const { contribution } = gameNumbers();
   const newFund = r2(state.prevFund + contribution - state.cost);
 
-  document.getElementById('fundResult').style.display = 'block';
+  const off = isOffFund();
+  document.getElementById('offFundNote').style.display = off ? 'block' : 'none';
+  document.getElementById('fundResult').style.display = off ? 'none' : 'block';
+  if (off) return;
   const fpd = document.getElementById('fundPreviewDate');
   if (fpd) fpd.textContent = formatDateTime(new Date());
   document.getElementById('fundGrid').innerHTML = `
@@ -2844,8 +2859,8 @@ async function showResult() {
   const grid = document.getElementById('resultGrid');
   grid.innerHTML = state.players.map((p,i) => {
     const raw = totals[i];
-    if (state.fullPocket) {
-      // 全进口袋：直接显示每人净赢/净输，玩家之间自己结清
+    if (isOffFund()) {
+      // 不计入公积金的比赛：直接显示每人净赢/净输，玩家之间自己结清
       const color = raw > 0 ? '#27ae60' : raw < 0 ? '#e74c3c' : '#888';
       return `
       <div class="result-player-card" style="${raw > 0 ? 'border-color:#27ae60;' : ''}">
@@ -2882,10 +2897,23 @@ function recalcFund() {
   const prev = r2(state.prevFund);
   const newFund = r2(prev + contribution - cost);
 
+  const costBox = document.querySelector('.result-cost-box');
+  if (costBox) costBox.style.display = isOffFund() ? 'none' : '';
+  if (isOffFund()) {
+    const pot = -getTotals().reduce((a, b) => a + b, 0);
+    document.getElementById('resultFundBox').innerHTML = `
+    <div class="result-fund-title">📝 本场只记录比赛</div>
+    <div class="result-fund-detail">计分方式：${state.fullPocket ? '全进口袋' : '进入口袋'}（和其他朋友的比赛）</div>
+    ${pot > 0 ? `<div class="result-fund-detail">总分（锅）：${pot} 分 ＝ ฿${(pot * 100).toLocaleString()}，由这场比赛的朋友们自己处理</div>` : ''}
+    <div class="result-fund-detail" style="border-top:1px solid rgba(107,203,119,0.3);padding-top:8px;margin-top:4px;">不计入我们的公积金，余额不变</div>
+    <div class="result-fund-new">฿${prev.toLocaleString()}</div>
+  `;
+    return;
+  }
   document.getElementById('resultFundBox').innerHTML = `
     <div class="result-fund-title">🏦 公积金结算 <span style="font-size:12px;opacity:0.75;font-family:'Noto Sans SC',sans-serif;font-weight:400;letter-spacing:0;">${formatDateTime(new Date())}</span></div>
     <div class="result-fund-detail">上次结余：฿${prev.toLocaleString()}</div>
-    <div class="result-fund-detail">${state.fullPocket ? '本次贡献（全进口袋，不进公积金）' : '本次贡献（各人输分×฿100）'}：฿${contribution.toLocaleString()}</div>
+    <div class="result-fund-detail">本次贡献（各人输分×฿100）：฿${contribution.toLocaleString()}</div>
     <div class="result-fund-detail">本次费用：฿${cost.toLocaleString()}</div>
     <div class="result-fund-detail" style="border-top:1px solid rgba(107,203,119,0.3);padding-top:8px;margin-top:4px;">
       新结余 = ${prev} + ${contribution} − ${cost}
@@ -2980,6 +3008,7 @@ function doCancelGame() {
   state.costItems = [];
 
   document.getElementById('fundResult').style.display = 'none';
+  document.getElementById('offFundNote').style.display = 'none';
   loadFund().then(fund => {
     document.getElementById('prevFundInput').value = fund;
     updateFundBanner();
@@ -3051,11 +3080,12 @@ async function _saveHistory() {
     amounts: adjusted.map(a => a * 100),
     scores: totals.slice(),
     mode: state.fullPocket ? 'fullPocket' : state.pocketMode ? 'pocket' : 'normal',
+    offFund: isOffFund(),
     gameId: state.gameId || '',
     prevFund: prevFund,
     contribution: contribution,
     cost: cost,
-    costItems: state.costItems.length > 0 ? state.costItems.slice() : [],
+    costItems: (!isOffFund() && state.costItems.length > 0) ? state.costItems.slice() : [],
     newFund: newFund,
     courseName: state.courseName || ''
   };
@@ -3086,7 +3116,7 @@ async function _updateSavedCost() {
   const { adjusted, contribution, cost, net } = gameNumbers();
   const patch = {
     adjusted, amounts: adjusted.map(a => a * 100), contribution, scores: getTotals(),
-    cost, costItems: state.costItems.slice()
+    cost, costItems: isOffFund() ? [] : state.costItems.slice()
   };
   let hist = null;
   try { hist = await getHistoryStrict(); } catch(e) {}
@@ -3324,7 +3354,7 @@ function showGameDetail(idx) {
     const adj = r.adjusted ? r.adjusted[i] : 0;
     const amt = r.amounts ? r.amounts[i] : 0;
     const isWinner = adj === 0;
-    if (r.mode === 'fullPocket' && Array.isArray(r.scores)) {
+    if ((r.offFund || r.mode === 'fullPocket') && Array.isArray(r.scores)) {
       const sc = r.scores[i] || 0;
       const col = sc > 0 ? '#27ae60' : sc < 0 ? '#c0392b' : '#888';
       return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:${sc >= 0 ? '#f0fdf4' : '#fff8f8'};border-radius:8px;margin-bottom:6px;border:1px solid ${sc >= 0 ? '#a3e6b5' : '#f5c5c5'};">
@@ -3453,7 +3483,7 @@ async function renderHistory() {
       const adj = r.adjusted[i];
       const amt = r.amounts[i];
       const zero = adj === 0;
-      if (r.mode === 'fullPocket' && Array.isArray(r.scores)) {
+      if ((r.offFund || r.mode === 'fullPocket') && Array.isArray(r.scores)) {
         const sc = r.scores[i] || 0;
         return `<div class="history-player${sc >= 0 ? ' zero' : ''}">${p}: <b>${fullPocketText(sc)}</b></div>`;
       }
@@ -3478,7 +3508,7 @@ async function renderHistory() {
         <div class="history-players">${players}</div>
         <div class="history-fund" style="flex-direction:column;gap:4px;">
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span>贡献 ฿${r.contribution.toLocaleString()} −费用 ฿${r.cost.toLocaleString()}</span>
+            <span>${r.offFund ? '📝 只记录比赛，不计入公积金' : `贡献 ฿${r.contribution.toLocaleString()} −费用 ฿${r.cost.toLocaleString()}`}</span>
             <span style="font-weight:800;color:${netColor};">${net > 0 ? '净入账 ＋฿' + net.toLocaleString() : net < 0 ? '净支出 ฿' + Math.abs(net).toLocaleString() : '净 ฿0'}</span>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px dashed #c8e6c9;padding-top:4px;">
