@@ -303,22 +303,18 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     transition: transform 0.12s, box-shadow 0.12s, opacity 0.12s;
   }
-  /* 选中的那个：放大、抬起、红底白字加勾；没选中的变淡 */
+  /* 选中的那个：底色变深、像按下去一样；点的时候闪一下 */
   .cost-chip.selected {
-    background: linear-gradient(135deg, #ff6b4a, #c0392b);
-    border-color: #fff;
+    background: linear-gradient(135deg, #b9770e, #8a5200);
+    border-color: #6e4100;
     color: #fff;
-    transform: scale(1.14) translateY(-2px);
-    box-shadow: 0 6px 14px rgba(0,0,0,0.5), 0 0 0 3px rgba(255,215,0,0.9), 0 0 18px 6px rgba(255,200,60,0.75);
-    animation: chipGlow 1.6s ease-in-out infinite;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.35);
   }
-  /* 像亮着的灯泡：一直发光，光晕轻轻呼吸 */
-  @keyframes chipGlow {
-    0%, 100% { box-shadow: 0 6px 14px rgba(0,0,0,0.5), 0 0 0 3px rgba(255,215,0,0.9), 0 0 12px 3px rgba(255,200,60,0.55); }
-    50%      { box-shadow: 0 6px 14px rgba(0,0,0,0.5), 0 0 0 3px rgba(255,235,120,1),  0 0 24px 9px rgba(255,210,80,0.95); }
+  .cost-chip.flash { animation: chipFlash 0.35s ease-out; }
+  @keyframes chipFlash {
+    0%   { filter: brightness(1.7); transform: scale(1.08); }
+    100% { filter: brightness(1); transform: scale(1); }
   }
-  .cost-chip.selected::before { content: '✓ '; }
-  .cost-chip.dimmed { opacity: 0.55; box-shadow: none; }
   .role-landlord {
     background: linear-gradient(135deg, #ffeaa0, #ffd700) !important;
     color: #8b0000;
@@ -984,7 +980,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v159</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v160</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
       <div id="syncStatus" onclick="syncNow()" style="margin-top:6px;font-size:12px;font-weight:700;color:#7dffa5;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">☁️ 云端已同步</div>
@@ -1173,14 +1169,16 @@
         <div style="background:rgba(15,18,40,0.55);border:1px solid rgba(255,233,168,0.35);border-radius:8px;padding:10px 12px;margin-bottom:10px;">
           <div style="display:flex;gap:8px;align-items:flex-start;">
             <span style="font-size:16px;color:#ffe9a8;white-space:nowrap;padding-top:8px;">💰 费用</span>
-            <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
-              <input type="number" id="costAddInput" placeholder="输入金额" min="0"
-                style="width:100%;padding:7px 10px;border:1.5px solid rgba(255,233,168,0.6);border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;background:rgba(255,255,255,0.95);box-sizing:border-box;"
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;gap:8px;">
+                <input type="number" id="costAddInput" placeholder="金额" size="1" min="0"
+                style="flex:0 0 36%;min-width:0;width:auto;padding:7px 10px;border:1.5px solid rgba(255,233,168,0.6);border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;background:rgba(255,255,255,0.95);box-sizing:border-box;"
                 onkeydown="if(event.key==='Enter')addCost()">
+                <input type="text" id="costAddNote" placeholder="备注（选填）" size="1" maxlength="20" oninput="refreshCostChips('costAddNote')"
+                style="flex:1;min-width:0;width:auto;padding:7px 10px;border:1.5px solid rgba(255,233,168,0.4);border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;background:rgba(255,255,255,0.8);box-sizing:border-box;"
+                onkeydown="if(event.key==='Enter')addCost()">
+              </div>
               <div style="display:flex;gap:6px;flex-wrap:wrap;"><button type="button" onclick="pickCostNote('costAddNote','小费')" class="cost-chip" data-for="costAddNote" data-note="小费">小费</button><button type="button" onclick="pickCostNote('costAddNote','食物')" class="cost-chip" data-for="costAddNote" data-note="食物">食物</button></div>
-              <input type="text" id="costAddNote" placeholder="或自己写备注（选填）" maxlength="20" oninput="refreshCostChips('costAddNote')"
-                style="width:100%;padding:6px 10px;border:1.5px solid rgba(255,233,168,0.4);border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;background:rgba(255,255,255,0.8);box-sizing:border-box;"
-                onkeydown="if(event.key==='Enter')addCost()">
             </div>
             <button onclick="addCost()"
               style="padding:7px 14px;background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Noto Sans SC',sans-serif;margin-top:1px;">＋ 加</button>
@@ -1200,14 +1198,16 @@
       <div class="result-cost-box" style="background:#fff8e7;border:1.5px solid #c9a84c;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
         <div style="font-size:13px;font-weight:700;color:#6b3a1f;margin-bottom:10px;letter-spacing:1px;">💰 本次费用（可多笔累加）</div>
         <div style="display:flex;gap:8px;align-items:flex-start;">
-          <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
-            <input type="number" id="costInput" placeholder="输入金额" min="0"
-              style="width:100%;padding:8px 12px;border:1.5px solid #c9a84c;border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;box-sizing:border-box;"
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;gap:8px;">
+              <input type="number" id="costInput" placeholder="金额" size="1" min="0"
+              style="flex:0 0 36%;min-width:0;width:auto;padding:8px 12px;border:1.5px solid #c9a84c;border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;box-sizing:border-box;"
               onkeydown="if(event.key==='Enter')addCostResult()">
+              <input type="text" id="costNoteInput" placeholder="备注（选填）" size="1" maxlength="20" oninput="refreshCostChips('costNoteInput')"
+              style="flex:1;min-width:0;width:auto;padding:8px 12px;border:1.5px solid #e8c88c;border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;box-sizing:border-box;"
+              onkeydown="if(event.key==='Enter')addCostResult()">
+            </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;"><button type="button" onclick="pickCostNote('costNoteInput','小费')" class="cost-chip" data-for="costNoteInput" data-note="小费">小费</button><button type="button" onclick="pickCostNote('costNoteInput','食物')" class="cost-chip" data-for="costNoteInput" data-note="食物">食物</button></div>
-            <input type="text" id="costNoteInput" placeholder="或自己写备注（选填）" maxlength="20" oninput="refreshCostChips('costNoteInput')"
-              style="width:100%;padding:6px 12px;border:1.5px solid #e8c88c;border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;box-sizing:border-box;"
-              onkeydown="if(event.key==='Enter')addCostResult()">
           </div>
           <button onclick="addCostResult()"
             style="padding:8px 16px;background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Noto Sans SC',sans-serif;margin-top:1px;">＋ 加</button>
@@ -1852,7 +1852,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 159; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 160; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -2841,6 +2841,14 @@ function pickCostNote(inputId, text) {
   if (!inp) return;
   inp.value = inp.value === text ? '' : text;
   refreshCostChips(inputId);
+  // 点的那个按钮闪一下
+  const chip = [...document.querySelectorAll(`.cost-chip[data-for="${inputId}"]`)].find(c => c.dataset.note === text);
+  if (chip) {
+    chip.classList.remove('flash');
+    void chip.offsetWidth;
+    chip.classList.add('flash');
+    setTimeout(() => chip.classList.remove('flash'), 400);
+  }
 }
 // 加完一笔后：选中的快捷按钮保持亮着（可以连着加好几笔同类的），自己手写的备注才清空
 function keepChipNote(inputId) {
