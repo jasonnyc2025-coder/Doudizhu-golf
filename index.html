@@ -602,15 +602,17 @@
   .total-zero { color: rgba(255,255,255,0.4); }
 
   /* FUND RESULT */
+  /* 公积金区域：晚霞天空（上面深蓝带星星，往下变紫、橘、金），和白天的球场记分区呼应 */
   .fund-result {
-    background: linear-gradient(180deg, #0d4a1f, #072d12);
+    background: linear-gradient(rgba(10,12,30,0.42), rgba(10,12,30,0.30)), radial-gradient(1.6px 1.6px at 9% 5%, #fff, transparent 60%), radial-gradient(1.3px 1.3px at 28% 11%, #fff, transparent 60%), radial-gradient(1.7px 1.7px at 49% 4%, #fff, transparent 60%), radial-gradient(1.3px 1.3px at 70% 13%, #fff, transparent 60%), radial-gradient(1.6px 1.6px at 88% 7%, #fff, transparent 60%), radial-gradient(1.2px 1.2px at 79% 21%, #fff, transparent 60%), radial-gradient(1.2px 1.2px at 18% 23%, #fff, transparent 60%), linear-gradient(180deg, #1b2450 0%, #5b3a78 45%, #d9744a 75%, #f6c26b 100%);
     padding: 14px 20px;
-    border-top: 2px solid #27ae60;
+    border-top: 3px solid #f6c26b;
   }
   .fund-title {
     font-family: 'Ma Shan Zheng', cursive;
     font-size: 24px;
-    color: #6bcb77;
+    color: #ffe9a8;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.6);
     text-align: center;
     letter-spacing: 2px;
     margin-bottom: 10px;
@@ -621,22 +623,22 @@
     gap: 8px;
   }
   .fund-cell {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(107,203,119,0.3);
+    background: rgba(15,18,40,0.55);
+    border: 1px solid rgba(255,233,168,0.45);
     border-radius: 6px;
     padding: 10px 8px;
     text-align: center;
   }
   .fund-cell-label {
     font-size: 16px;
-    color: rgba(107,203,119,0.6);
+    color: #e8d9b8;
     margin-bottom: 4px;
     letter-spacing: 0.5px;
   }
   .fund-cell-value {
     font-size: 24px;
     font-weight: 700;
-    color: #6bcb77;
+    color: #fff;
   }
   .fund-cell-value.highlight {
     font-size: 30px;
@@ -685,22 +687,23 @@
   }
 
   .result-fund-box {
-    background: linear-gradient(135deg, #0d4a1f, #072d12);
-    border: 2px solid #27ae60;
+    background: linear-gradient(rgba(10,12,30,0.42), rgba(10,12,30,0.30)), radial-gradient(1.6px 1.6px at 9% 5%, #fff, transparent 60%), radial-gradient(1.3px 1.3px at 28% 11%, #fff, transparent 60%), radial-gradient(1.7px 1.7px at 49% 4%, #fff, transparent 60%), radial-gradient(1.3px 1.3px at 70% 13%, #fff, transparent 60%), radial-gradient(1.6px 1.6px at 88% 7%, #fff, transparent 60%), radial-gradient(1.2px 1.2px at 79% 21%, #fff, transparent 60%), radial-gradient(1.2px 1.2px at 18% 23%, #fff, transparent 60%), linear-gradient(180deg, #1b2450 0%, #5b3a78 45%, #d9744a 75%, #f6c26b 100%);
+    border: 2px solid #f6c26b;
     border-radius: 10px;
     padding: 16px;
     margin-bottom: 20px;
   }
   .result-fund-title {
     font-family: 'Ma Shan Zheng', cursive;
-    color: #6bcb77;
+    color: #ffe9a8;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.6);
     font-size: 18px;
     margin-bottom: 12px;
     letter-spacing: 2px;
   }
   .result-fund-detail {
-    font-size: 13px;
-    color: rgba(107,203,119,0.8);
+    font-size: 14px;
+    color: #f3ead6;
     margin-bottom: 8px;
     text-align: left;
   }
@@ -709,6 +712,7 @@
     font-weight: 700;
     color: #ffd700;
     margin-top: 8px;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.55);
   }
 
   .new-game-btn {
@@ -915,7 +919,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v146</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v147</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
       <div id="syncStatus" onclick="syncNow()" style="margin-top:6px;font-size:12px;font-weight:700;color:#7dffa5;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">☁️ 云端已同步</div>
@@ -1098,16 +1102,16 @@
       </div>
       <div class="fund-result" id="fundResult" style="display:none;">
         <div class="fund-title">🏦 公积金预览 <span id="fundPreviewDate" style="font-size:11px;opacity:0.7;font-family:'Noto Sans SC',sans-serif;font-weight:400;letter-spacing:0;"></span></div>
-        <div style="background:rgba(0,0,0,0.18);border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+        <div style="background:rgba(15,18,40,0.55);border:1px solid rgba(255,233,168,0.35);border-radius:8px;padding:10px 12px;margin-bottom:10px;">
           <div style="display:flex;gap:8px;align-items:flex-start;">
-            <span style="font-size:16px;color:rgba(107,203,119,0.9);white-space:nowrap;padding-top:8px;">💰 费用</span>
+            <span style="font-size:16px;color:#ffe9a8;white-space:nowrap;padding-top:8px;">💰 费用</span>
             <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
               <input type="number" id="costAddInput" placeholder="输入金额" min="0"
-                style="width:100%;padding:7px 10px;border:1.5px solid rgba(107,203,119,0.5);border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;background:rgba(255,255,255,0.95);box-sizing:border-box;"
+                style="width:100%;padding:7px 10px;border:1.5px solid rgba(255,233,168,0.6);border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;background:rgba(255,255,255,0.95);box-sizing:border-box;"
                 onkeydown="if(event.key==='Enter')addCost()">
               <div style="display:flex;gap:6px;flex-wrap:wrap;"><button type="button" onclick="pickCostNote('costAddNote','小费')" class="cost-chip" data-for="costAddNote" data-note="小费">小费</button><button type="button" onclick="pickCostNote('costAddNote','食物')" class="cost-chip" data-for="costAddNote" data-note="食物">食物</button></div>
               <input type="text" id="costAddNote" placeholder="或自己写备注（选填）" maxlength="20" oninput="refreshCostChips('costAddNote')"
-                style="width:100%;padding:6px 10px;border:1.5px solid rgba(107,203,119,0.3);border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;background:rgba(255,255,255,0.8);box-sizing:border-box;"
+                style="width:100%;padding:6px 10px;border:1.5px solid rgba(255,233,168,0.4);border-radius:6px;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;background:rgba(255,255,255,0.8);box-sizing:border-box;"
                 onkeydown="if(event.key==='Enter')addCost()">
             </div>
             <button onclick="addCost()"
@@ -1780,7 +1784,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 146; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 147; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -2773,13 +2777,13 @@ function renderCostList() {
   if (state.costItems.length === 0) { list.innerHTML = ''; return; }
   list.innerHTML = state.costItems.map((c,i) => {
     const amt = _costAmt(c), note = _costNote(c);
-    return `<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.08);border-radius:7px;padding:7px 12px;">
+    return `<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(15,18,40,0.5);border-radius:7px;padding:7px 12px;">
       <span style="font-size:16px;color:#fff;">${note ? '<span style="color:rgba(255,220,100,0.95);margin-right:8px;font-weight:700;">' + note + '</span>' : ''}฿${amt.toLocaleString()}</span>
       <button onclick="removeCost(${i})" style="background:none;border:none;color:#ff8a8a;font-size:20px;cursor:pointer;padding:0 4px;line-height:1;">×</button>
     </div>`;
   }).join('') + `
-    <div style="display:flex;justify-content:space-between;border-top:1px solid rgba(107,203,119,0.3);padding-top:6px;margin-top:4px;">
-      <span style="font-size:15px;color:rgba(107,203,119,0.9);font-weight:600;">合计费用</span>
+    <div style="display:flex;justify-content:space-between;border-top:1px solid rgba(255,233,168,0.4);padding-top:6px;margin-top:4px;">
+      <span style="font-size:15px;color:#ffe9a8;font-weight:600;">合计费用</span>
       <span style="font-size:16px;color:#ffd700;font-weight:700;">฿${state.cost.toLocaleString()}</span>
     </div>`;
 }
@@ -2920,7 +2924,7 @@ function recalcFund() {
     <div class="result-fund-title">📝 本场只记录比赛</div>
     <div class="result-fund-detail">计分方式：${state.fullPocket ? '全进口袋' : '一半进袋'}（和其他朋友的比赛）</div>
     ${pot > 0 ? `<div class="result-fund-detail">总分（锅）：${pot} 分 ＝ ฿${(pot * 100).toLocaleString()}，由这场比赛的朋友们自己处理</div>` : ''}
-    <div class="result-fund-detail" style="border-top:1px solid rgba(107,203,119,0.3);padding-top:8px;margin-top:4px;">不计入我们的公积金，余额不变</div>
+    <div class="result-fund-detail" style="border-top:1px solid rgba(255,233,168,0.45);padding-top:8px;margin-top:4px;">不计入我们的公积金，余额不变</div>
     <div class="result-fund-new">฿${prev.toLocaleString()}</div>
   `;
     return;
@@ -2930,7 +2934,7 @@ function recalcFund() {
     <div class="result-fund-detail">上次结余：฿${prev.toLocaleString()}</div>
     <div class="result-fund-detail">本次贡献（各人输分×฿100）：฿${contribution.toLocaleString()}</div>
     <div class="result-fund-detail">本次费用：฿${cost.toLocaleString()}</div>
-    <div class="result-fund-detail" style="border-top:1px solid rgba(107,203,119,0.3);padding-top:8px;margin-top:4px;">
+    <div class="result-fund-detail" style="border-top:1px solid rgba(255,233,168,0.45);padding-top:8px;margin-top:4px;">
       新结余 = ${prev} + ${contribution} − ${cost}
     </div>
     <div class="result-fund-new">฿${newFund.toLocaleString()}</div>
