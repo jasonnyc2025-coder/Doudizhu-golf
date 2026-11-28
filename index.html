@@ -354,11 +354,39 @@
   /* 记分区用手绘球场做背景，和上面白底的分数表区分开。
      背景按宽度铺、顶部对齐：记分区变高（出现倍率行等）时风景不动，只是下面多露出草地 */
   .hole-panel {
-    padding: 92px 20px 64px; /* 顶部留两行高的天空、底部留一行高的草地，把记分区和上下两块隔开 */
-    background: linear-gradient(rgba(255,255,255,0.2), rgba(255,255,255,0.2)), url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20430%201000%27%20preserveAspectRatio%3D%27xMidYMin%20slice%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27sky%27%20gradientUnits%3D%27userSpaceOnUse%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%270%27%20y2%3D%27520%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%238fc9f5%27%2F%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23e3f3ff%27%2F%3E%3C%2FlinearGradient%3E%3ClinearGradient%20id%3D%27fw%27%20gradientUnits%3D%27userSpaceOnUse%27%20x1%3D%270%27%20y1%3D%27180%27%20x2%3D%270%27%20y2%3D%27520%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%238fd06a%27%2F%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%234f9e3f%27%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%27430%27%20height%3D%271000%27%20fill%3D%27url%28%23sky%29%27%2F%3E%3Cellipse%20cx%3D%2770%27%20cy%3D%2760%27%20rx%3D%2746%27%20ry%3D%2714%27%20fill%3D%27%23fff%27%20opacity%3D%27.85%27%2F%3E%3Cellipse%20cx%3D%27110%27%20cy%3D%2752%27%20rx%3D%2734%27%20ry%3D%2712%27%20fill%3D%27%23fff%27%20opacity%3D%27.85%27%2F%3E%3Cellipse%20cx%3D%27330%27%20cy%3D%2790%27%20rx%3D%2752%27%20ry%3D%2714%27%20fill%3D%27%23fff%27%20opacity%3D%27.7%27%2F%3E%3Cpath%20d%3D%27M0%20190%20Q90%20130%20200%20175%20T430%20150%20V1000%20H0Z%27%20fill%3D%27%235d9c57%27%2F%3E%3Cpath%20d%3D%27M0%20215%20Q120%20180%20260%20205%20T430%20195%20V1000%20H0Z%27%20fill%3D%27url%28%23fw%29%27%2F%3E%3Cg%20stroke%3D%27%23fff%27%20stroke-opacity%3D%27.13%27%20stroke-width%3D%2726%27%3E%3Cpath%20d%3D%27M-40%20300%20L470%20240%27%2F%3E%3Cpath%20d%3D%27M-40%20380%20L470%20320%27%2F%3E%3Cpath%20d%3D%27M-40%20460%20L470%20400%27%2F%3E%3Cpath%20d%3D%27M-40%20540%20L470%20480%27%2F%3E%3Cpath%20d%3D%27M-40%20620%20L470%20560%27%2F%3E%3Cpath%20d%3D%27M-40%20700%20L470%20640%27%2F%3E%3Cpath%20d%3D%27M-40%20780%20L470%20720%27%2F%3E%3Cpath%20d%3D%27M-40%20860%20L470%20800%27%2F%3E%3Cpath%20d%3D%27M-40%20940%20L470%20880%27%2F%3E%3C%2Fg%3E%3Cellipse%20cx%3D%27300%27%20cy%3D%27238%27%20rx%3D%2774%27%20ry%3D%2717%27%20fill%3D%27%23a6e07c%27%2F%3E%3Cellipse%20cx%3D%27110%27%20cy%3D%27262%27%20rx%3D%2744%27%20ry%3D%2711%27%20fill%3D%27%23f1e2b0%27%2F%3E%3Cline%20x1%3D%27312%27%20y1%3D%27236%27%20x2%3D%27312%27%20y2%3D%27176%27%20stroke%3D%27%23fff%27%20stroke-width%3D%273%27%2F%3E%3Cpath%20d%3D%27M312%20176%20L342%20186%20L312%20197Z%27%20fill%3D%27%23e23b2e%27%2F%3E%3Ccircle%20cx%3D%27292%27%20cy%3D%27240%27%20r%3D%273.5%27%20fill%3D%27%23fff%27%2F%3E%3C%2Fsvg%3E") top center / 100% auto no-repeat, #4f9e3f;
+    padding: 18px 20px 64px; /* 顶部留两行高的天空、底部留一行高的草地，把记分区和上下两块隔开 */
+    background: linear-gradient(rgba(255,255,255,0.2), rgba(255,255,255,0.2)), url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20430%201000%27%20preserveAspectRatio%3D%27xMidYMin%20slice%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27sky%27%20gradientUnits%3D%27userSpaceOnUse%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%270%27%20y2%3D%27520%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%238fc9f5%27%2F%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23e3f3ff%27%2F%3E%3C%2FlinearGradient%3E%3ClinearGradient%20id%3D%27fw%27%20gradientUnits%3D%27userSpaceOnUse%27%20x1%3D%270%27%20y1%3D%27180%27%20x2%3D%270%27%20y2%3D%27520%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%238fd06a%27%2F%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%234f9e3f%27%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%27430%27%20height%3D%271000%27%20fill%3D%27url%28%23sky%29%27%2F%3E%3Cpath%20d%3D%27M0%20190%20Q90%20130%20200%20175%20T430%20150%20V1000%20H0Z%27%20fill%3D%27%235d9c57%27%2F%3E%3Cpath%20d%3D%27M0%20215%20Q120%20180%20260%20205%20T430%20195%20V1000%20H0Z%27%20fill%3D%27url%28%23fw%29%27%2F%3E%3Cg%20stroke%3D%27%23fff%27%20stroke-opacity%3D%27.13%27%20stroke-width%3D%2726%27%3E%3Cpath%20d%3D%27M-40%20300%20L470%20240%27%2F%3E%3Cpath%20d%3D%27M-40%20380%20L470%20320%27%2F%3E%3Cpath%20d%3D%27M-40%20460%20L470%20400%27%2F%3E%3Cpath%20d%3D%27M-40%20540%20L470%20480%27%2F%3E%3Cpath%20d%3D%27M-40%20620%20L470%20560%27%2F%3E%3Cpath%20d%3D%27M-40%20700%20L470%20640%27%2F%3E%3Cpath%20d%3D%27M-40%20780%20L470%20720%27%2F%3E%3Cpath%20d%3D%27M-40%20860%20L470%20800%27%2F%3E%3Cpath%20d%3D%27M-40%20940%20L470%20880%27%2F%3E%3C%2Fg%3E%3Cellipse%20cx%3D%27300%27%20cy%3D%27238%27%20rx%3D%2774%27%20ry%3D%2717%27%20fill%3D%27%23a6e07c%27%2F%3E%3Cellipse%20cx%3D%27110%27%20cy%3D%27262%27%20rx%3D%2744%27%20ry%3D%2711%27%20fill%3D%27%23f1e2b0%27%2F%3E%3Cline%20x1%3D%27312%27%20y1%3D%27236%27%20x2%3D%27312%27%20y2%3D%27176%27%20stroke%3D%27%23fff%27%20stroke-width%3D%273%27%2F%3E%3Cpath%20d%3D%27M312%20176%20L342%20186%20L312%20197Z%27%20fill%3D%27%23e23b2e%27%2F%3E%3Ccircle%20cx%3D%27292%27%20cy%3D%27240%27%20r%3D%273.5%27%20fill%3D%27%23fff%27%2F%3E%3C%2Fsvg%3E") top center / 100% auto no-repeat, #4f9e3f;
     border-top: 3px solid #c9a84c;
   }
   .hole-panel .hole-title { text-shadow: 0 0 6px #fff, 0 0 10px #fff, 0 0 14px #fff; }
+  /* 洞号写在天空正中的一朵云上 */
+  .hole-cloud {
+    position: relative;
+    width: min(280px, 100%);
+    aspect-ratio: 280 / 124;
+    margin: 0 auto 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .hole-cloud svg {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    filter: drop-shadow(0 0 1px #8fc0e6) drop-shadow(0 5px 6px rgba(40,80,120,0.28));
+  }
+  .hole-panel .hole-cloud .hole-title {
+    position: relative;
+    font-size: clamp(30px, 10.5vw, 40px);
+    text-shadow: none;
+    margin-top: 9%;
+  }
+  /* 修改某一洞时标题很长（带"取消""清除"按钮），不放进云里 */
+  .hole-cloud.editing { width: 100%; aspect-ratio: auto; justify-content: flex-start; margin: 26px 0 0; }
+  .hole-cloud.editing svg { display: none; }
+  .hole-panel .hole-cloud.editing .hole-title {
+    margin-top: 0; flex-wrap: wrap; row-gap: 6px; white-space: normal;
+    text-shadow: 0 0 6px #fff, 0 0 10px #fff, 0 0 14px #fff;
+  }
+  #multSelectLabel { margin-top: 30px; }
   .hole-panel .winner-select-label {
     width: fit-content;
     background: rgba(255,255,255,0.82);
@@ -373,15 +401,15 @@
     display: flex;
     flex-wrap: wrap;
     row-gap: 8px;
-    column-gap: calc(6px * var(--hs));
-    justify-content: space-between;
+    column-gap: calc(12px * var(--hs));
+    justify-content: center;
     align-items: center;
-    margin-bottom: 32px;
+    margin-bottom: 28px;
   }
   .hole-panel-header-left {
     display: flex;
     align-items: center;
-    gap: calc(6px * var(--hs));
+    gap: calc(12px * var(--hs));
     min-width: 0;
   }
   .hole-title {
@@ -402,9 +430,12 @@
     background: linear-gradient(135deg, #ffe9a8, #f5c542);
     border: 1.5px solid #c9962a;
     color: #5a2d0c;
-    padding: calc(8px * var(--hs, 1)) calc(12px * var(--hs, 1));
-    border-radius: 18px;
-    font-size: calc(16px * var(--hs, 1));
+    width: calc(104px * var(--hs, 1));
+    height: calc(46px * var(--hs, 1));
+    padding: 0;
+    box-sizing: border-box;
+    border-radius: 999px;
+    font-size: calc(17px * var(--hs, 1));
     font-weight: 800;
     box-shadow: 0 2px 5px rgba(0,0,0,0.18);
     cursor: pointer;
@@ -953,7 +984,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v158</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v159</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
       <div id="syncStatus" onclick="syncNow()" style="margin-top:6px;font-size:12px;font-weight:700;color:#7dffa5;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">☁️ 云端已同步</div>
@@ -1103,14 +1134,17 @@
       </div>
 
       <div class="hole-panel" id="holePanel">
+        <div class="hole-cloud" id="holeCloud">
+          <svg viewBox="0 0 280 124" aria-hidden="true"><defs><linearGradient id="holeCloudFill" gradientUnits="userSpaceOnUse" x1="0" y1="10" x2="0" y2="118"><stop offset="0" stop-color="#ffffff"/><stop offset=".65" stop-color="#ffffff"/><stop offset="1" stop-color="#dcecf8"/></linearGradient></defs><g fill="url(#holeCloudFill)"><rect x="40" y="62" width="200" height="50" rx="25"/><circle cx="62" cy="80" r="32"/><circle cx="102" cy="56" r="38"/><circle cx="158" cy="46" r="44"/><circle cx="212" cy="66" r="34"/><circle cx="236" cy="86" r="26"/></g></svg>
+          <div class="hole-title" id="holePanelTitle">第1洞</div>
+        </div>
         <div class="hole-panel-header">
           <div class="hole-panel-header-left">
-            <div class="hole-title" id="holePanelTitle">第1洞</div>
             <button class="change-hole-btn" id="changeHoleBtn" onclick="toggleHolePicker()" style="display:none;">🔀 改</button>
             <button class="change-hole-btn skip-hole-btn" id="skipHoleBtn" onclick="skipCurrentHole()" style="display:none;">⏭ 跳过</button>
           </div>
-          <div id="gameMenuWrap" style="position:relative;margin-left:auto;flex-shrink:0;">
-            <button id="gameMenuBtn" onclick="toggleGameMenu(event)" style="padding:calc(8px * var(--hs, 1)) calc(12px * var(--hs, 1));border-radius:10px;font-size:calc(16px * var(--hs, 1));font-weight:800;cursor:pointer;font-family:'Noto Sans SC',sans-serif;white-space:nowrap;background:linear-gradient(135deg,#7a4a22,#4a2a10);border:1.5px solid #3a1f0a;color:#ffe9a8;box-shadow:0 2px 5px rgba(0,0,0,0.25);">☰ 结束</button>
+          <div id="gameMenuWrap" style="position:relative;flex-shrink:0;">
+            <button id="gameMenuBtn" onclick="toggleGameMenu(event)" style="width:calc(104px * var(--hs, 1));height:calc(46px * var(--hs, 1));padding:0;box-sizing:border-box;border-radius:999px;font-size:calc(17px * var(--hs, 1));font-weight:800;cursor:pointer;font-family:'Noto Sans SC',sans-serif;white-space:nowrap;background:linear-gradient(135deg,#7a4a22,#4a2a10);border:1.5px solid #3a1f0a;color:#ffe9a8;box-shadow:0 2px 5px rgba(0,0,0,0.25);">☰ 结束</button>
             <div id="gameMenu" style="display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:50;min-width:170px;background:#fffdf5;border:1.5px solid #c9a84c;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.28);overflow:hidden;">
               <button onclick="closeGameMenu();earlyFinish()" style="display:block;width:100%;text-align:left;padding:14px 16px;background:none;border:none;border-bottom:1px solid #eadfc0;font-size:16px;font-weight:700;color:#e67e22;cursor:pointer;font-family:'Noto Sans SC',sans-serif;white-space:nowrap;">🏁 提前结束并结算</button>
               <button onclick="closeGameMenu();cancelGame()" style="display:block;width:100%;text-align:left;padding:14px 16px;background:none;border:none;font-size:16px;font-weight:700;color:#c0392b;cursor:pointer;font-family:'Noto Sans SC',sans-serif;white-space:nowrap;">✕ 取消游戏（不保存）</button>
@@ -1818,7 +1852,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 158; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 159; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -2387,6 +2421,7 @@ function renderHolePanel() {
 
   const titleEl = document.getElementById('holePanelTitle');
   titleEl.style.fontSize = editing ? '22px' : ''; // 修改模式标题较长，字小一号避免换行
+  document.getElementById('holeCloud').classList.toggle('editing', editing);
   if (editing) {
     titleEl.innerHTML = `✏️ 修改第 ${h+1} 洞 <button onclick="cancelEdit()" style="font-size:12px;padding:3px 10px;margin-left:8px;background:#999;color:#fff;border:none;border-radius:6px;font-family:'Noto Sans SC',sans-serif;cursor:pointer;vertical-align:middle;">取消</button><button onclick="clearHoleFrom(${h})" style="font-size:12px;padding:3px 10px;margin-left:6px;background:#c0392b;color:#fff;border:none;border-radius:6px;font-family:'Noto Sans SC',sans-serif;cursor:pointer;vertical-align:middle;">🗑 清除此洞及之后</button>`;
   } else {
@@ -2402,6 +2437,8 @@ function renderHolePanel() {
   const canChange = !editing && state.step < TOTAL_HOLES && unplayedCount > 1;
   changeBtn.style.display = canChange ? 'inline-block' : 'none';
   skipBtn.style.display = canChange ? 'inline-block' : 'none';
+  // 两个按钮都不显示时，把它们的容器也收起，"结束"才能真正居中
+  document.querySelector('.hole-panel-header-left').style.display = canChange ? '' : 'none';
   // 修改某一洞时标题行放不下，先收起这两个按钮
   document.getElementById('gameMenuWrap').style.display = editing ? 'none' : '';
   closeGameMenu();
@@ -2744,14 +2781,16 @@ function clearHoleFrom(h) {
   showToast(`已清除第 ${h+1} 洞及之后的记录，请重新记分`);
 }
 
-// 洞号和"改 / 跳过 / 结束"必须在同一行：放不下就把这一行按比例缩小，直到放下为止
+// "改 / 跳过 / 结束"三个一样大的按钮必须在同一行：放不下就按比例缩小，直到放下为止
 function fitHoleHeader() {
   const header = document.querySelector('.hole-panel-header');
   const left = header ? header.querySelector('.hole-panel-header-left') : null;
   const menu = document.getElementById('gameMenuWrap');
-  if (!header || !left || !menu) return;
+  const change = document.getElementById('changeHoleBtn');
+  if (!header || !left || !menu || !change) return;
   header.style.setProperty('--hs', '1');
-  if (state.editingHole !== null || menu.style.display === 'none' || !header.clientWidth) return;
+  // 修改模式、或只剩"结束"一个按钮时不用适配
+  if (state.editingHole !== null || menu.style.display === 'none' || change.style.display === 'none' || !header.clientWidth) return;
   for (let scale = 1; scale >= 0.5; scale -= 0.03) {
     header.style.setProperty('--hs', scale.toFixed(2));
     const sameRow = menu.getBoundingClientRect().top < left.getBoundingClientRect().bottom - 2;
