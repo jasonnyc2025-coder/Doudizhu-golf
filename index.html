@@ -1015,7 +1015,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v162</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v163</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
       <div id="syncStatus" onclick="syncNow()" style="margin-top:6px;font-size:12px;font-weight:700;color:#7dffa5;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">☁️ 云端已同步</div>
@@ -1154,7 +1154,7 @@
 
       <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#fdf6e3;border-bottom:1px solid #e8d5a0;">
         <div id="gameCourseNameDisplay" style="font-size:13px;font-weight:600;color:#6b3a1f;letter-spacing:0.5px;"></div>
-        <div style="height:34px;"></div>
+        <div id="liveStatus" onclick="refreshLive()" style="height:34px;display:flex;align-items:center;font-size:13px;font-weight:700;color:#1e8449;white-space:nowrap;cursor:pointer;">🟢 已同步</div>
       </div>
 
       <div class="scoreboard">
@@ -1609,23 +1609,162 @@ function liveNewer(a, b) {
   return a.rev > b.rev || (a.rev === b.rev && String(a.by) > String(b.by));
 }
 
-let _livePending = null; // 还没成功写上云端的最新一份
-function writeLiveDoc(payload) {
-  _livePending = payload;
-  renderSyncStatus();
-  import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js')
-    .then(({ doc, runTransaction }) => runTransaction(db, async (tx) => {
-      const ref = doc(db, 'config', 'liveGame');
-      const cur = await tx.get(ref);
-      // 云端已经有比我更新的进度（别人同时记了分）：不覆盖，稍后本机会收到并显示那一份
-      if (cur.exists() && typeof cur.data().rev === 'number' && liveNewer(cur.data(), payload)) return;
-      tx.set(ref, payload);
-    }))
-    .then(() => { if (_livePending === payload) _livePending = null; renderSyncStatus(); })
-    .catch(() => {});
+let _liveSyncedRev = 0;  // 本机画面所依据的那份云端进度的版本号；写入时云端必须还停在这一版
+let _livePending = null; // 还没成功写上云端的最新一份 {payload, action}
+let _liveAction = null;  // 下一次保存对应的操作（记了哪一洞等），冲突时用来判断能不能重做
+let _liveWriting = false;
+let _liveLinkOk = true;  // 最近一次和云端通信是否成功
+
+function setLiveBase(rev, gameId) {
+  _liveSyncedRev = rev;
+  try { localStorage.setItem('ddz_live_base', JSON.stringify({ g: gameId || state.gameId || '', r: rev })); } catch(e) {}
 }
-// 断网时没写上去的进度，联网后补写（仍然只在它比云端新时才写）
-window.addEventListener('online', () => { if (_livePending) writeLiveDoc(_livePending); });
+function setLiveLink(okNow) { _liveLinkOk = okNow; renderLiveStatus(); }
+
+// 只有当云端还停在"我看到的那一版"时才写入；否则说明别人已经先记了，返回冲突，绝不覆盖
+async function tryWriteLive(item) {
+  const { doc, runTransaction } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+  const base = _liveSyncedRev;
+  const payload = item.payload;
+  const kind = item.action ? item.action.kind : '';
+  let result = { ok: true };
+  await runTransaction(db, async (tx) => {
+    result = { ok: true };
+    const ref = doc(db, 'config', 'liveGame');
+    const cur = await tx.get(ref);
+    const d = cur.exists() ? cur.data() : null;
+    const sameGame = !!d && d.gameId === payload.gameId;
+    if (payload.active === false) {            // 结束比赛：只结束自己这一场
+      if (!d || sameGame) tx.set(ref, payload);
+      return;
+    }
+    if (kind === 'start' || !d) { tx.set(ref, payload); return; }   // 新开一局（已确认替换）
+    if (sameGame) {
+      if (!d.active || d.rev !== base) { result = { ok: false, cloud: d }; return; }
+    } else if (d.active) { result = { ok: false, cloud: d }; return; } // 已被另一场新比赛替换
+    tx.set(ref, payload);
+  });
+  return result;
+}
+
+// 把还没写上去的进度写到云端；同一时间只跑一个，断网时留着等下次
+async function flushLive() {
+  if (_liveWriting || !_livePending || !window.db) return;
+  _liveWriting = true;
+  renderLiveStatus();
+  try {
+    while (_livePending) {
+      const item = _livePending;
+      let res;
+      try { res = await withTimeout(tryWriteLive(item), 8000); }
+      catch(e) { setLiveLink(false); break; }
+      _liveLinkOk = true;
+      if (res.ok) {
+        setLiveBase(item.payload.rev, item.payload.gameId);
+        if (_livePending === item) _livePending = null;
+        continue;
+      }
+      _livePending = null;
+      handleLiveConflict(res.cloud, item);
+    }
+  } finally {
+    _liveWriting = false;
+    renderSyncStatus();
+  }
+}
+
+function leaveLiveGame(message) {
+  clearGameState();
+  localStorage.removeItem('ddz_saved_ref');
+  state.results = []; state.scores = []; state.landlordHistory = [];
+  state.step = 0; state.cost = 0; state.costItems = [];
+  state.gameId = null; state.editingHole = null; state.selectedWinner = null;
+  hideAllScreens();
+  document.getElementById('mainCard').style.display = 'none';
+  showToast(message);
+  setTimeout(() => fundSerial(reconcileLedger), 3000);
+}
+
+// 把云端的进度显示到本机
+function adoptLive(cloud) {
+  let snap = null;
+  try { snap = JSON.parse(cloud.state); } catch(e) {}
+  if (!snap) return null;
+  _liveCloud = cloud;
+  _liveRev = cloud.rev; _liveBy = cloud.by;
+  localStorage.setItem('ddz_game_state', JSON.stringify(snap));
+  restoreGameState(snap, true);
+  setLiveBase(cloud.rev, cloud.gameId);
+  return snap;
+}
+
+// 我写的时候别人已经先写了：以云端为准；如果我只是记了"当前这一洞"而它还没人记，就在最新进度上自动重记
+function handleLiveConflict(cloud, item) {
+  const action = item.action || {};
+  const mine = item.payload.gameId;
+  _liveRev = cloud.rev; _liveBy = cloud.by;
+  const inGame = screenShown('gameScreen') && state.gameId === mine;
+  if (!cloud.active || cloud.gameId !== mine) {
+    _liveCloud = cloud.active ? cloud : null;
+    renderLiveBanner();
+    if (inGame) leaveLiveGame(!cloud.active ? (cloud.reason === 'cancel' ? '这场比赛已被取消' : '这场比赛已结算，可在详细记录里查看') : '已经开始了一场新的比赛');
+    return;
+  }
+  if (!inGame) { _liveCloud = cloud; renderLiveBanner(); return; }
+  const snap = adoptLive(cloud);
+  if (!snap) return;
+  if (action.kind === 'record') {
+    const current = snap.playOrder ? snap.playOrder[snap.step] : -1;
+    if (snap.results && snap.results[action.hole]) {
+      showToast(`第 ${action.hole + 1} 洞别人已经记过了，已显示最新进度`);
+    } else if (current === action.hole && snap.currentLandlord === action.land && snap.step < TOTAL_HOLES) {
+      state.selectedWinner = { type: action.result.type, playerIdx: action.result.playerIdx, mult: action.result.mult };
+      confirmHole();   // 在最新进度上重记这一洞
+    } else {
+      showToast('比赛进度已更新，请重新记这一洞');
+    }
+  } else {
+    showToast('别人刚更新了比赛，已显示最新进度，请再操作一次');
+  }
+}
+
+// 主动向云端要一次最新进度（切回前台、恢复联网、定时都会调用）
+let _liveRefreshing = false;
+async function refreshLive() {
+  if (!window.db || _liveRefreshing) return;
+  _liveRefreshing = true;
+  try {
+    const { doc, getDocFromServer } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const snap = await withTimeout(getDocFromServer(doc(db, 'config', 'liveGame')), 6000);
+    setLiveLink(true);
+    onLiveSnapshot(snap);
+  } catch(e) {
+    setLiveLink(false);
+  } finally {
+    _liveRefreshing = false;
+  }
+  flushLive();
+}
+function liveWake() { if (document.visibilityState === 'visible') refreshLive(); }
+document.addEventListener('visibilitychange', liveWake);
+window.addEventListener('pageshow', liveWake);
+window.addEventListener('focus', liveWake);
+window.addEventListener('online', liveWake);
+// 比赛进行中每 5 秒核对一次，防止手机休眠后实时连接悄悄断掉
+setInterval(() => {
+  if (document.visibilityState !== 'visible' || !window.db) return;
+  if (screenShown('gameScreen') || _liveCloud || _livePending) refreshLive();
+}, 5000);
+
+// 比赛页右上角的同步状态
+function renderLiveStatus() {
+  const el = document.getElementById('liveStatus');
+  if (!el) return;
+  if (!window.db) { el.textContent = '📴 仅本机'; el.style.color = '#999'; }
+  else if (!navigator.onLine || !_liveLinkOk) { el.textContent = '📴 未连接 · 联网后自动同步'; el.style.color = '#c0392b'; }
+  else if (_livePending || _liveWriting) { el.textContent = '⏳ 同步中…'; el.style.color = '#b9770e'; }
+  else { el.textContent = '🟢 已同步'; el.style.color = '#1e8449'; }
+}
 
 // ── 随时保持云端最新 ──────────────────────────────────────────────────
 // 本机还有没传上云端的东西吗：断网时记的账目记录，或还没写上去的比赛进度
@@ -1633,6 +1772,7 @@ function pendingSyncCount() {
   return (window.db ? localHist().length : 0) + (_livePending ? 1 : 0);
 }
 function renderSyncStatus() {
+  renderLiveStatus();
   const el = document.getElementById('syncStatus');
   if (!el) return;
   const n = pendingSyncCount();
@@ -1644,7 +1784,7 @@ function renderSyncStatus() {
 // 把所有没传上去的东西立刻再传一次
 function syncNow() {
   if (!window.db) { renderSyncStatus(); return; }
-  if (_livePending) writeLiveDoc(_livePending);
+  flushLive();
   fundSerial(reconcileLedger).then(renderSyncStatus, renderSyncStatus);
   renderSyncStatus();
 }
@@ -1663,7 +1803,9 @@ function pushLiveGame(snap) {
   const payload = { active: true, rev: _liveRev, by: DEVICE_ID, gameId: snap.gameId, updatedAt: Date.now(), state: JSON.stringify(snap) };
   _liveCloud = payload;
   renderLiveBanner();
-  writeLiveDoc(payload);
+  _livePending = { payload, action: _liveAction };
+  _liveAction = null;
+  flushLive();
 }
 
 // 结算或取消时，通知所有手机这场比赛结束了
@@ -1673,7 +1815,9 @@ function endLiveGame(reason) {
   _liveBy = DEVICE_ID;
   _liveCloud = null;
   renderLiveBanner();
-  writeLiveDoc({ active: false, rev: _liveRev, by: DEVICE_ID, gameId: state.gameId, reason: reason, updatedAt: Date.now() });
+  _livePending = { payload: { active: false, rev: _liveRev, by: DEVICE_ID, gameId: state.gameId, reason: reason, updatedAt: Date.now() }, action: { kind: 'end' } };
+  _liveAction = null;
+  flushLive();
 }
 
 function renderLiveBanner() {
@@ -1695,48 +1839,44 @@ function joinLiveGame() {
   hideAllScreens();
   document.getElementById('mainCard').style.display = 'block';
   restoreGameState(snap, true);
+  setLiveBase(_liveCloud.rev, _liveCloud.gameId);
   showToast('已进入正在进行的比赛');
 }
 
 function onLiveSnapshot(docSnap) {
+  // 本机还有没写上去的操作：先不动，由写入时的冲突处理来对齐，避免把别人的进度和我的旧画面搅在一起
+  if (_livePending || _liveWriting) return;
   const data = docSnap.exists() ? docSnap.data() : null;
   const known = { rev: _liveRev, by: _liveBy };
   let isNewer = true;
   if (data && typeof data.rev === 'number') {
     const same = data.rev === known.rev && data.by === known.by; // 就是本机已经有的那一份
     if (!same && !liveNewer(data, known)) return;                // 比本机已有的还旧，忽略
-    isNewer = !same && data.by !== DEVICE_ID;
+    isNewer = !same;
     _liveRev = data.rev;
     _liveBy = data.by;
   }
-  const inThisGame = screenShown('gameScreen') && !!state.gameId && !!data && data.gameId === state.gameId;
+  const watching = screenShown('gameScreen') && !!state.gameId && !!data;
+  const inThisGame = watching && data.gameId === state.gameId;
   if (!data || !data.active) {
     _liveCloud = null;
     renderLiveBanner();
     if (inThisGame && data.by !== DEVICE_ID) {
       // 别人已经结算或取消了我正在看的这场比赛：退出到首页
-      clearGameState();
-      localStorage.removeItem('ddz_saved_ref');
-      state.results = []; state.scores = []; state.landlordHistory = [];
-      state.step = 0; state.cost = 0; state.costItems = [];
-      state.gameId = null; state.editingHole = null; state.selectedWinner = null;
-      hideAllScreens();
-      document.getElementById('mainCard').style.display = 'none';
-      showToast(data.reason === 'cancel' ? '这场比赛已被取消' : '这场比赛已结算，可在详细记录里查看');
-      setTimeout(() => fundSerial(reconcileLedger), 3000);
+      leaveLiveGame(data.reason === 'cancel' ? '这场比赛已被取消' : '这场比赛已结算，可在详细记录里查看');
     }
     return;
   }
   _liveCloud = data;
   renderLiveBanner();
-  if (data.by === DEVICE_ID) return;
-  if (inThisGame && isNewer) {
+  if (watching && !inThisGame && data.by !== DEVICE_ID) { leaveLiveGame('已经开始了一场新的比赛'); return; }
+  if (inThisGame && isNewer && data.rev !== _liveSyncedRev) {
     // 别人刚记了分：把最新进度显示出来
-    let snap = null;
-    try { snap = JSON.parse(data.state); } catch(e) {}
-    if (snap) {
-      localStorage.setItem('ddz_game_state', JSON.stringify(snap));
-      restoreGameState(snap, true);
+    const before = state.step;
+    const snap = adoptLive(data);
+    if (snap && snap.step > before && data.by !== DEVICE_ID) {
+      const hole = snap.playOrder[snap.step - 1];
+      showToast(`第 ${hole + 1} 洞已由其他手机记分`);
     }
   }
 }
@@ -1745,7 +1885,7 @@ async function startLiveWatch() {
   if (!window.db || _liveUnsub) return;
   try {
     const { doc, onSnapshot } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-    _liveUnsub = onSnapshot(doc(db, 'config', 'liveGame'), onLiveSnapshot, () => {});
+    _liveUnsub = onSnapshot(doc(db, 'config', 'liveGame'), (d) => { setLiveLink(true); onLiveSnapshot(d); }, () => {});
     // 同时监听公共设置：余额变化、别的手机已升级到新版本，都实时推送过来
     onSnapshot(doc(db, 'config', 'settings'), onSettingsSnapshot, () => {});
   } catch(e) {}
@@ -1789,6 +1929,13 @@ function onSettingsSnapshot(docSnap) {
 
 function restoreGameState(snap, silent) {
   Object.assign(state, snap);
+  if (!silent) {
+    // 从本机恢复：接着用上次同步到的版本号
+    try {
+      const b = JSON.parse(localStorage.getItem('ddz_live_base') || 'null');
+      _liveSyncedRev = (b && b.g === snap.gameId) ? b.r : 0;
+    } catch(e) { _liveSyncedRev = 0; }
+  }
   // 正在打的洞 = 打洞顺序里的下一个（快照里没有单独保存它）
   if (Array.isArray(state.playOrder) && state.step < state.playOrder.length) state.currentHole = state.playOrder[state.step];
   state.editingHole = null;
@@ -1887,7 +2034,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 162; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 163; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -2283,6 +2430,8 @@ function startGame() {
   renderHolePanel();
   renderTotals();
   centerHolePanel();
+  _liveAction = { kind: 'start' };
+  _liveSyncedRev = 0;
   saveGameState(); // 一开局就同步，别的手机马上能看到
   renderLiveBanner();
 }
@@ -2685,6 +2834,7 @@ function confirmHole() {
 
   // 正常按顺序记分（当前洞 = playOrder[step]）
   const h = state.playOrder[state.step];
+  _liveAction = { kind: 'record', hole: h, land: state.currentLandlord, result: { type, playerIdx, mult } };
   state.results[h] = { type, playerIdx, mult };
   state.selectedWinner = null;
 
@@ -3213,6 +3363,8 @@ function cancelGame() {
 }
 
 async function earlyFinish() {
+  await refreshLive(); // 先拿到最新进度，免得按过期的画面结算
+  if (!screenShown('gameScreen')) return;
   const holesPlayed = state.step;
   if (holesPlayed === 0) { showToast('还没有记分，无法结束'); return; }
   if (confirm(`已打 ${holesPlayed} 洞，提前结束并结算？\n（成绩将按已打的 ${holesPlayed} 洞计算）`)) {
