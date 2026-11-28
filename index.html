@@ -513,11 +513,22 @@
   }
 
   .mult-btns {
-    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;
+    display: flex; gap: 8px; flex-wrap: nowrap; margin-bottom: 14px;
+  }
+  /* 倍率按钮固定为两行：名称 + 分数提示。高度固定，选没选赢家都一样高 */
+  .mult-name { display: block; line-height: 22px; height: 22px; white-space: nowrap; overflow: hidden; }
+  .mult-hint { display: block; line-height: 16px; height: 16px; font-size: 12px; opacity: 0.85; white-space: nowrap; overflow: hidden; letter-spacing: -0.3px; }
+  .mult-btn.mult-locked {
+    background: #e2e2e2;
+    border-color: #c4c4c4;
+    color: #9a9a9a;
+    opacity: 0.75;
+    cursor: not-allowed;
   }
   .mult-btn {
-    flex: 1; min-width: 80px;
-    padding: 13px 8px;
+    flex: 1 1 0; min-width: 0;
+    height: 60px; box-sizing: border-box;
+    padding: 0 4px;
     border-radius: 8px;
     border: 2px solid #c9a84c;
     background: white;
@@ -926,7 +937,7 @@
       <span class="fund-banner-label">🏦 当前公积金结余</span>
       <div class="fund-banner-value" id="fundBannerValue">฿0</div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v154</button>
+        <button onclick="forceUpdate()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#1a3300;background:rgba(255,215,0,0.7);border:none;border-radius:6px;cursor:pointer;letter-spacing:1px;font-family:'Noto Sans SC',sans-serif;" id="versionBtn">🔄 v155</button>
         <button onclick="showChangePinDialog()" style="padding:3px 10px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">🔒 密码</button>
       </div>
       <div id="syncStatus" onclick="syncNow()" style="margin-top:6px;font-size:12px;font-weight:700;color:#7dffa5;cursor:pointer;font-family:'Noto Sans SC',sans-serif;">☁️ 云端已同步</div>
@@ -1096,8 +1107,8 @@
         </div>
         <div class="winner-select-label">🏆 谁赢了这一洞？</div>
         <div class="winner-btns" id="winnerBtns"></div>
-        <div class="winner-select-label" id="multSelectLabel" style="display:none;">🎯 倍率</div>
-        <div class="mult-btns" id="multBtns" style="display:none;"></div>
+        <div class="winner-select-label" id="multSelectLabel">🎯 倍率</div>
+        <div class="mult-btns" id="multBtns"></div>
         <button class="confirm-btn" id="confirmBtn" disabled onclick="confirmHole()">确认记分 ✓</button>
       </div>
 
@@ -1791,7 +1802,7 @@ function populateStartHole() {
   sel.value = 0;
 }
 
-const APP_VERSION = 154; // 与 sw.js 里的 ddz-golf-vNN 保持一致
+const APP_VERSION = 155; // 与 sw.js 里的 ddz-golf-vNN 保持一致
 
 // 自动更新：打开或切回应用时检查线上版本，有新版本就自动刷新
 let _updateChecking = false;
@@ -2378,12 +2389,8 @@ function renderHolePanel() {
   state.selectedWinner = null;
   document.getElementById('confirmBtn').disabled = true;
 
-  // 倍率面板初始隐藏，等选完赢家再显示
-  const mbtns = document.getElementById('multBtns');
-  const mlabel = document.getElementById('multSelectLabel');
-  mbtns.innerHTML = '';
-  mbtns.style.display = 'none';
-  mlabel.style.display = 'none';
+  // 倍率一直显示：没选赢家时是灰色不可点，选了赢家才能点（这样面板高度不变，按钮不会跳）
+  renderMultBtns(null, true);
 
   // 该洞当前已选的结果（编辑模式下用于预选高亮）
   const cur = editing ? state.results[h] : null;
@@ -2406,9 +2413,9 @@ function addWinnerBtn(container, label, type, playerIdx, land, cur) {
     btn.classList.add(type === 'landlord' ? 'landlord-win' : type === 'farmer' ? 'farmer-win' : 'tie-selected');
     state.selectedWinner = { type, playerIdx, mult: 1 };
     if (type === 'tie') {
-      // 平局无倍率
-      document.getElementById('multBtns').style.display = 'none';
-      document.getElementById('multSelectLabel').style.display = 'none';
+      // 平局无倍率：倍率保持灰色不可点，直接可以确认
+      renderMultBtns(null, true);
+      state.selectedWinner.mult = 1;
       document.getElementById('confirmBtn').disabled = false;
     } else {
       // 显示倍率面板，等用户挑 普通/小鸟/老鹰
@@ -2424,12 +2431,24 @@ function addWinnerBtn(container, label, type, playerIdx, land, cur) {
 }
 
 // 渲染 普通/小鸟/老鹰 倍率按钮。preselectMult: 编辑模式下的已存倍率
-function renderMultBtns(preselectMult) {
+// locked = true：只显示灰色不可点的按钮（还没选赢家，或选了平局）
+function renderMultBtns(preselectMult, locked) {
   const mbtns = document.getElementById('multBtns');
   const mlabel = document.getElementById('multSelectLabel');
   mbtns.innerHTML = '';
   mbtns.style.display = 'flex';
   mlabel.style.display = 'block';
+  mlabel.style.opacity = locked ? '0.6' : '';
+  if (locked) {
+    ['普通', '🐦 小鸟', '🦅 老鹰'].forEach(text => {
+      const b = document.createElement('button');
+      b.className = 'mult-btn mult-locked';
+      b.disabled = true;
+      b.innerHTML = `<span class="mult-name">${text}</span><span class="mult-hint">&nbsp;</span>`;
+      mbtns.appendChild(b);
+    });
+    return;
+  }
   // 未选倍率时，禁用确认按钮（除非编辑模式下已有预选）
   document.getElementById('confirmBtn').disabled = !preselectMult;
   if (state.selectedWinner) state.selectedWinner.mult = preselectMult || null;
@@ -2442,9 +2461,9 @@ function renderMultBtns(preselectMult) {
     return `−${m}`;
   };
   const opts = [
-    { mult: 1, label: `普通 <span style="opacity:0.85;">${hint(1)}</span>`, cls: 'normal-selected' },
-    { mult: 2, label: `🐦 小鸟 <span style="opacity:0.85;">${hint(2)}</span>`, cls: 'birdie-selected' },
-    { mult: 3, label: `🦅 老鹰 <span style="opacity:0.85;">${hint(3)}</span>`, cls: 'eagle-selected' },
+    { mult: 1, label: `<span class="mult-name">普通</span><span class="mult-hint">${hint(1)}</span>`, cls: 'normal-selected' },
+    { mult: 2, label: `<span class="mult-name">🐦 小鸟</span><span class="mult-hint">${hint(2)}</span>`, cls: 'birdie-selected' },
+    { mult: 3, label: `<span class="mult-name">🦅 老鹰</span><span class="mult-hint">${hint(3)}</span>`, cls: 'eagle-selected' },
   ];
   opts.forEach(opt => {
     const b = document.createElement('button');
